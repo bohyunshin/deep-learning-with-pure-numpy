@@ -1,18 +1,7 @@
 import numpy as np
+from tools.activations import Sigmoid
+
 np.random.seed(1)
-
-
-def calculate_loss(y, pred):
-    # shape of y, pred: (num_of_data, 1)
-    return np.square(y - pred).sum() / 2
-
-
-class Sigmoid:
-    def __init__(self):
-        pass
-
-    def forward(self, x):
-        return 1 / (1 + np.exp(-x))
 
 
 class Linear:
@@ -73,44 +62,3 @@ class NeuralNetwork:
             if layer.__class__.__name__ == "Linear":
                 layer.weight_grad = None
                 layer.bias_grad = None
-
-def train(epoch):
-    # n = 1000
-    # k = 4
-    # struct = [4, 3, 2, 1]
-    # X = np.random.randn(n, k)
-    # y = np.cos(X).sum(axis=1).reshape(n,1)
-
-    struct = [1, 5, 5, 5, 1]
-
-    n=100
-    X = np.linspace(-5, 5, n)
-    y = np.sin(X)
-
-    X = X.reshape(-1, 1)
-    y = y.reshape(-1, 1)
-
-    nn = NeuralNetwork(struct=struct, n=n)
-    loss_ = []
-    for _ in range(epoch):
-
-        # forward pass
-        pred = nn.forward(X)
-
-        # calculate loss
-        loss = calculate_loss(y, pred)
-        if epoch % 1000 == 0:
-            print(loss)
-        loss_.append(loss)
-
-        # backward
-        nn.backward(y, pred, X)
-
-        # gradient descent
-        nn.step(0.001)
-
-        # clear gradient
-        nn.zero_grad()
-
-if __name__ == "__main__":
-    train(50000)
