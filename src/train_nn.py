@@ -1,4 +1,6 @@
 import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
 
 from nn.mlp import NeuralNetwork
 from loss.regression import mean_squared_error
@@ -28,8 +30,6 @@ def train(epoch):
 
         # calculate loss
         loss = mean_squared_error(y, pred)
-        if epoch % 1000 == 0:
-            print(loss)
         loss_.append(loss)
 
         # backward
@@ -40,6 +40,11 @@ def train(epoch):
 
         # clear gradient
         nn.zero_grad()
+
+    sns.lineplot(loss_)
+    plt.ylabel("loss")
+    plt.xlabel("iteration")
+    plt.show()
 
 if __name__ == "__main__":
     train(50000)
