@@ -42,7 +42,6 @@ class NeuralNetwork(BaseNeuralNet):
         return x
 
     def backward(self, y, pred, X):
-
         step = 1
         delta = (pred - y)
         for layer in self.layers[::-1]:
