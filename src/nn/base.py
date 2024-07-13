@@ -6,13 +6,17 @@ class BaseNeuralNet:
         pass
 
     @abstractmethod
-    def backpropagate(self):
+    def forward(self, x):
         pass
 
     @abstractmethod
-    def step(self):
+    def backward(self, y, pred, X):
         pass
 
     @abstractmethod
-    def zero_grad(self)
-        pass:
+    def step(self, lr):
+        pass
+
+    @abstractmethod
+    def zero_grad(self):
+        pass

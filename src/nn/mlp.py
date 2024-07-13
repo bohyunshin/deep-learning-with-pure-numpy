@@ -1,4 +1,6 @@
 import numpy as np
+
+from nn.base import BaseNeuralNet
 from tools.activations import Sigmoid
 
 np.random.seed(1)
@@ -20,8 +22,9 @@ class Linear:
         x = np.dot(x, self.weight) + self.bias.reshape(1, self.output_dim)
         return x # shape: (num_of_data, output_dim)
 
-class NeuralNetwork:
+class NeuralNetwork(BaseNeuralNet):
     def __init__(self, struct, n):
+        super().__init__()
         self.struct = struct
         self.n = n
         self.layers = []
