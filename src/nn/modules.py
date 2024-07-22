@@ -22,9 +22,8 @@ class Convolution:
     def __init__(self, input_dim: tuple, k: int , zero_padding: int):
         self.input_dim = input_dim
         h,w = input_dim
-        # k = kernel.shape[0]
-        out_h = (h + 2 * zero_padding - k + 1)
-        out_w = (w + 2 * zero_padding - k + 1)
+        self.out_h = (h + 2 * zero_padding - k + 1)
+        self.out_w = (w + 2 * zero_padding - k + 1)
         self.kernel = np.random.normal(0, 0.5, (k, k))
         self.bias = np.random.normal(0, 0.5, (1))
         self.zero_padding = zero_padding
@@ -38,7 +37,7 @@ class Convolution:
         for i in range(h-k+1):
             for j in range(w-k+1):
                 res.append( (x[i:i+k,j:j+k] * self.kernel).sum() + self.bias )
-        return np.array(res).reshape(self.input_dim)
+        return np.array(res).reshape((self.out_h, self.out_w))
 
 if __name__ == "__main__":
     input_dim = (4,4)
