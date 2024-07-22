@@ -7,7 +7,7 @@ from nn.modules import Linear
 np.random.seed(1)
 
 
-class NeuralNetwork(BaseNeuralNet):
+class MultipleLayerPerceptron(BaseNeuralNet):
     def __init__(self, struct, n):
         super().__init__()
         self.struct = struct
