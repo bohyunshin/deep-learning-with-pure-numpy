@@ -28,6 +28,9 @@ class Convolution:
         self.bias = np.random.normal(0, 0.5, (1))
         self.zero_padding = zero_padding
 
+        self.kernel_grad = None
+        self.bias_grad = None
+
     def forward(self, x):
         x = np.pad(x, self.zero_padding)
         h,w = x.shape

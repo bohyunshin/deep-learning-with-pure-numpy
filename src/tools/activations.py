@@ -22,3 +22,13 @@ class MaxPooling:
             for j in range(out_w):
                 res.append( x[i:i+self.k , j:j+self.k].max() )
         return np.array(res).reshape((out_h, out_w))
+
+
+class Softmax:
+    def __init__(self):
+        pass
+
+    def forward(self, x):
+        x = np.exp(x - x.max())
+        denom = x.sum()
+        return x / denom
