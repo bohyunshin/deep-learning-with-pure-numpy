@@ -14,14 +14,11 @@ class MaxPooling:
         self.k = k
 
     def forward(self, x):
-        h,w = x.shape
-        out_h = h-self.k+1
-        out_w = w-self.k+1
-        res = []
-        for i in range(out_h):
-            for j in range(out_w):
-                res.append( x[i:i+self.k , j:j+self.k].max() )
-        return np.array(res).reshape((out_h, out_w))
+        h, w = x.shape
+        k = self.k
+        if h % k != 0:
+            raise
+        return x.reshape(h // k, k, w // k, k).max(axis=(1, 3))
 
 
 class Softmax:
@@ -29,6 +26,7 @@ class Softmax:
         pass
 
     def forward(self, x):
+        x = x.reshape(-1,)
         x = np.exp(x - x.max())
         denom = x.sum()
         return x / denom
