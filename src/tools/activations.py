@@ -42,6 +42,16 @@ class MaxPooling:
 
         return np.ndarray(out)
 
+    def backward(self, dX_out):
+        n, h_out, w_out = dX_out.shape
+        h_in, w_in = h_out * self.k, w_out * self.k
+        dX_in = np.zeros((n, h_in, w_in))
+        for i in range(n):
+            c = self._cache[i]
+            for j,(row,col) in enumerate(c):
+                dX_in[i][row][col] = dX_out[i][j // self.k, j % self.k]
+        return dX_in
+
 
 class Softmax:
     def __init__(self):
