@@ -34,7 +34,7 @@ class Convolution:
         params
         ------
         imgs: np.ndarray
-            dimension (n, h_in, w_in). 2d array input.
+            dimension (n, h_in, w_in). 3d array input.
         """
         res = []
         pad = self.calculate_pad_dims()
@@ -49,15 +49,19 @@ class Convolution:
         params
         ------
         dX_out: np.ndarray (n, h_out, w_out)
-            upstream gradients of next layers. dimension
+            Upstream gradients of next layers. dimension
         dk: np.ndarray (h_k, w_k)
+            Gradients of kernel, which is
             convolution btw kernel and upstream gradients
         db: np.ndarray
+            Gradients of bias, which is
             sum of upstream gradients
 
         return
         ------
-        dX: full convolution btw 180 degree rotated kernel and upstream gradients
+        dX: np.ndarray(n, h_in, w_in)
+            Gradients of current input, which is
+            full convolution btw 180 degree rotated kernel and upstream gradients
         """
 
         dX_in = np.zeros_like(self.X)

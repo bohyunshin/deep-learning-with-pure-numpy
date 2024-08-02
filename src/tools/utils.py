@@ -20,8 +20,8 @@ def convolve(img, kernel, bias=0, stride=1, full=False):
     h_in, w_in = img.shape
     h_out, w_out = h_in-k+1, w_in-k+1
     out = np.zeros((h_out, w_out))
-    for i in range(h_in - k + 1):
-        for j in range(w_in - k + 1):
+    for i in range(h_out):
+        for j in range(w_out):
             out[i, j] = (img[i:i + k, j:j + k] * kernel).sum() + bias
     return out
 

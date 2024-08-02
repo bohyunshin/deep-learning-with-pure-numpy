@@ -7,12 +7,11 @@ from loss.classification import cross_entropy
 
 
 class SingleCNN(BaseNeuralNet):
-    def __init__(self, input_dim: tuple, output_dim: int, kernel_size: int , zero_padding: int, pooling_size: int):
+    def __init__(self, output_dim: int, kernel_dim: tuple , padding: str, pooling_size: int):
         super().__init__()
         self.cnn = Convolution(
-            input_dim=input_dim,
-            k=kernel_size,
-            zero_padding=zero_padding
+            kernel_dim=kernel_dim,
+            padding = padding
         )
         self.max_pooling = MaxPooling(k=pooling_size)
         self.sigmoid = Sigmoid()
