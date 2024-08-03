@@ -7,8 +7,8 @@ class Linear:
     def __init__(self, input_dim, output_dim):
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.weight = np.random.normal(0, 0.5, (input_dim, output_dim))
-        self.bias = np.random.normal(0, 0.5, output_dim)
+        self.w = np.random.normal(0, 0.5, (input_dim, output_dim))
+        self.b = np.random.normal(0, 0.5, output_dim)
 
         self.weight_grad = None
         self.bias_grad = None
@@ -16,8 +16,21 @@ class Linear:
     def forward(self, x):
         # shape of x: (num_of_data, input_dim)
         assert x.shape[1] == self.input_dim
-        x = np.dot(x, self.weight) + self.bias.reshape(1, self.output_dim)
+        self.x = x
+        x = np.dot(x, self.w) + self.b.reshape(1, self.output_dim)
         return x # shape: (num_of_data, output_dim)
+
+    def backward(self, dx_out):
+        """
+        params
+        ------
+        dX_out: np.ndarray(n,)
+            Upstream gradient.
+        """
+        self.db = dx_out.sum()
+        self.dw = np.dot(dx_out, self.x)
+        dx_in = np.dot(dx_out, self.w.T)
+        return dx_in
 
 
 class Convolution:
@@ -30,6 +43,9 @@ class Convolution:
         h_out, w_out = self.calculate_out_dims(h_in, w_in)
         self.h_out = h_out
         self.w_out = w_out
+
+        self.dk = None
+        self.db = None
 
     def forward(self, imgs):
         """
@@ -79,7 +95,10 @@ class Convolution:
         for i in range(n):
             dX_in[i] = convolve(dX_out[i], rotate_kernel, full=True)
 
-        return dk, db, dX_in
+        self.dk = dk
+        self.db = db
+
+        return dX_in
 
     def calculate_pad_dims(self):
         if self.padding == "same":

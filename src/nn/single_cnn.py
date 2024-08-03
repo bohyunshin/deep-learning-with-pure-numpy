@@ -37,7 +37,19 @@ class SingleCNN(BaseNeuralNet):
         return x
 
     def backward(self, y, pred, X):
-        pass
+        """
+        params
+        ------
+        y: np.ndarray (n, n_label)
+            One hot encoded vector for class label
+
+        pred: np.ndarray (n, n_label)
+            Probability of each class, whose row sum is equal to 1
+
+        X: np.ndarray (n, h_in, w_in)
+            Arrary of input images
+        """
+        dhaty = self.softmax.backward(y)
 
     def step(self, lr):
         pass

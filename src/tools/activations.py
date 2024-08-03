@@ -69,12 +69,25 @@ class Softmax:
         """
         params
         ------
-        x: np.ndarray (n, h_in)
+        x: np.ndarray (n, n_label)
 
         returns
         -------
-        out: np.ndarray (n, h_in)
+        y_pred: np.ndarray (n, n_label)
         """
         x = np.exp(x)
-        out = x / x.sum(axis=1).reshape(-1,1)
-        return out
+        y_pred = x / x.sum(axis=1).reshape(-1,1)
+        self.y_pred = y_pred
+        return y_pred
+
+    def backward(self, y_true):
+        """
+        params
+        ------
+        y_true: np.ndarray (n, n_label)
+
+        returns
+        -------
+        out_grad: np.ndarray (n, n_label)
+        """
+        return self.y_pred - y_true
