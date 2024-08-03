@@ -6,10 +6,26 @@ class Sigmoid:
         pass
 
     def forward(self, x):
+        """
+        params
+        ------
+        x: np.ndarray (n,)
+
+        returns
+        -------
+        out: np.ndarray (n,)
+        """
+        self.x = x
         return 1 / (1 + np.exp(-x))
 
-    def backward(self, x):
-        frw = self.forward(x)
+    def backward(self):
+        """
+        returns
+        -------
+        out: np.ndarray (n,)
+            Derivative of sigmoid function.
+        """
+        frw = self.forward(self.x)
         return frw * (1-frw)
 
 
