@@ -36,13 +36,15 @@ class Convolution:
         imgs: np.ndarray
             dimension (n, h_in, w_in). 3d array input.
         """
-        res = []
+        n, h_in, w_in = imgs.shape
         pad = self.calculate_pad_dims()
+        h_out, w_out = self.calculate_out_dims(h_in, w_in)
+        out = np.zeros((n, h_out, w_out))
         imgs = np.pad(imgs, pad_width=((0,0),(pad[0], pad[0]), (pad[1], pad[1])))
         self.X = imgs
-        for img in imgs:
-            res.append(convolve(img, self.kernel, self.bias))
-        return np.array(res)
+        for i, img in enumerate(imgs):
+            out[i] = convolve(img, self.kernel, self.bias)
+        return out
 
     def backward(self, dX_out):
         """
@@ -79,24 +81,19 @@ class Convolution:
         return dk, db, dX_in
 
     def calculate_pad_dims(self):
-        if self.padding == 'same':
+        if self.padding == "same":
             h_f, w_f = self.kernel.shape
             return (h_f - 1) // 2, (w_f - 1) // 2
-        elif self.padding == 'valid':
+        elif self.padding == "valid":
             return 0, 0
         else:
             raise
 
-
-
-
-if __name__ == "__main__":
-    input_dim = (4,4)
-    kernel = np.array([[1,0,1], [0,1,0], [1,0,1]])
-    padding = "same"
-    kernel_dim = (3,3)
-    conv = Convolution(kernel_dim, padding)
-    img = np.random.normal(0, 0.5, (28, 28))
-    imgs = np.array([img for _ in range(10)])
-    frw = conv.forward(imgs)
-    print(conv.backward(frw))
+    def calculate_out_dims(self, h_in, w_in):
+        k, _ = self.kernel.shape
+        if self.padding == "same":
+            return h_in, w_in
+        elif self.padding == "valid":
+            return h_in-k+1, w_in-k+1
+        else:
+            raise
