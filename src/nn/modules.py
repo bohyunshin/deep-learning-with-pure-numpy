@@ -21,13 +21,15 @@ class Linear:
 
 
 class Convolution:
-    def __init__(self, kernel_dim: tuple , padding: str):
+    def __init__(self, input_dim, kernel_dim: tuple , padding: str):
+        n, h_in, w_in = input_dim
         self.padding = padding
         self.kernel = np.random.normal(0, 0.5, kernel_dim)
         self.bias = np.random.normal(0, 0.5, 1)
 
-        self.dk = None
-        self.db = None
+        h_out, w_out = self.calculate_out_dims(h_in, w_in)
+        self.h_out = h_out
+        self.w_out = w_out
 
     def forward(self, imgs):
         """
@@ -38,8 +40,7 @@ class Convolution:
         """
         n, h_in, w_in = imgs.shape
         pad = self.calculate_pad_dims()
-        h_out, w_out = self.calculate_out_dims(h_in, w_in)
-        out = np.zeros((n, h_out, w_out))
+        out = np.zeros((n, self.h_out, self.w_out))
         imgs = np.pad(imgs, pad_width=((0,0),(pad[0], pad[0]), (pad[1], pad[1])))
         self.X = imgs
         for i, img in enumerate(imgs):

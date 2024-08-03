@@ -8,10 +8,20 @@ class Sigmoid:
     def forward(self, x):
         return 1 / (1 + np.exp(-x))
 
+    def backward(self, x):
+        frw = self.forward(x)
+        return frw * (1-frw)
+
 
 class MaxPooling:
-    def __init__(self, k: int):
+    def __init__(self, input_dim: tuple, k: int):
         self.k = k
+        n, h_in, w_in = input_dim
+        if h_in % k != 0 or w_in % k != 0:  # no stride assumed
+            raise
+        h_out, w_out = h_in // k, w_in // k
+        self.h_out = h_out
+        self.w_out = w_out
         self._cache = []
 
     def forward(self, x):
@@ -23,9 +33,7 @@ class MaxPooling:
         """
         k = self.k
         n, h_in, w_in = x.shape
-        if h_in % k != 0 or w_in % k != 0: # no stride assumed
-            raise
-        h_out, w_out = h_in // k, w_in // k
+        h_out, w_out = self.h_out, self.w_out
         out = np.zeros((n, h_out, w_out))
         for i,img in enumerate(x):
             tmp = np.zeros((h_out, w_out))
@@ -58,7 +66,15 @@ class Softmax:
         pass
 
     def forward(self, x):
-        x = x.reshape(-1,)
-        x = np.exp(x - x.max())
-        denom = x.sum()
-        return x / denom
+        """
+        params
+        ------
+        x: np.ndarray (n, h_in)
+
+        returns
+        -------
+        out: np.ndarray (n, h_in)
+        """
+        x = np.exp(x)
+        out = x / x.sum(axis=1).reshape(-1,1)
+        return out
