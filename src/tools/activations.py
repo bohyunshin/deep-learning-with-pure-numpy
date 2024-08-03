@@ -31,11 +31,10 @@ class Sigmoid:
 
 class MaxPooling:
     def __init__(self, input_dim: tuple, k: int):
+        self.input_dim = input_dim
         self.k = k
         n, h_in, w_in = input_dim
-        if h_in % k != 0 or w_in % k != 0:  # no stride assumed
-            raise
-        h_out, w_out = h_in // k, w_in // k
+        h_out, w_out = h_in // k + (h_in % k >= 1), w_in // k + (w_in % k >= 1)
         self.h_out = h_out
         self.w_out = w_out
         self._cache = []
@@ -58,8 +57,6 @@ class MaxPooling:
                 for c in range(w_out):
                     max_val = img[r*k:(r+1)*k, c*k:(c+1)*k].max()
                     row,col = list(zip(*np.where(img == max_val)))[0]
-                    # row, col = idx // h_in, idx % w_in
-                    # max_val = img[row,col]
                     tmp[r][c] = max_val
                     cache.append((row,col))
             out[i] = tmp
@@ -69,7 +66,7 @@ class MaxPooling:
 
     def backward(self, dX_out):
         n, h_out, w_out = dX_out.shape
-        h_in, w_in = h_out * self.k, w_out * self.k
+        _, h_in, w_in = self.input_dim
         dX_in = np.zeros((n, h_in, w_in))
         for i in range(n):
             c = self._cache[i]

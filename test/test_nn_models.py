@@ -1,6 +1,9 @@
 import numpy as np
-from src.nn.single_cnn import SingleCNN
-from src.loss.classification import cross_entropy
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(), "src"))
+from nn.single_cnn import SingleCNN
+from loss.classification import cross_entropy
 
 
 def test_single_cnn_dummy_data():

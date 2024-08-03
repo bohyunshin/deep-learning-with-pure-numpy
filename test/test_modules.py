@@ -1,5 +1,8 @@
 import numpy as np
-from src.nn.modules import Convolution
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(), "src"))
+from nn.modules import Convolution
 
 
 def test_convolution():
@@ -8,7 +11,9 @@ def test_convolution():
     kernel_dim = (3,3)
     padding = "same"
 
-    conv = Convolution(kernel_dim, padding)
+    conv = Convolution(input_dim=(n, h_in, w_in),
+                       kernel_dim=kernel_dim,
+                       padding=padding)
     pad = conv.calculate_pad_dims()
     imgs = np.random.normal(0, 0.5, (n, h_in, w_in))
 
@@ -16,7 +21,7 @@ def test_convolution():
     assert out.shape == (n, h_in, w_in)
 
     out_grad = np.random.normal(0, 0.5, out.shape)
-    dk, db, dX_in = conv.backward(out_grad)
-    assert dk.shape == kernel_dim
+    dX_in = conv.backward(out_grad)
+    assert conv.dk.shape == kernel_dim
     # assert db.shape == ()
     assert dX_in.shape == (n, h_in+pad[0]*2, w_in+pad[1]*2)
