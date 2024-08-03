@@ -13,6 +13,9 @@ class Linear:
         self.weight_grad = None
         self.bias_grad = None
 
+        self.dw = None
+        self.db = None
+
     def forward(self, x):
         # shape of x: (num_of_data, input_dim)
         assert x.shape[1] == self.input_dim
@@ -28,9 +31,22 @@ class Linear:
             Upstream gradient.
         """
         self.db = dx_out.sum()
-        self.dw = np.dot(dx_out, self.x)
+        self.dw = np.dot(self.x.T, dx_out)
         dx_in = np.dot(dx_out, self.w.T)
         return dx_in
+
+    def get_params_grad(self):
+        params_info = {
+            "w": {
+                "current": self.w,
+                "grad": self.dw
+            },
+            "b": {
+                "current": self.b,
+                "grad": self.db
+            }
+        }
+        return params_info
 
 
 class Convolution:
@@ -38,7 +54,7 @@ class Convolution:
         n, h_in, w_in = input_dim
         self.padding = padding
         self.kernel = np.random.normal(0, 0.5, kernel_dim)
-        self.bias = np.random.normal(0, 0.5, 1)
+        self.b = np.random.normal(0, 0.5, 1)
 
         h_out, w_out = self.calculate_out_dims(h_in, w_in)
         self.h_out = h_out
@@ -60,7 +76,7 @@ class Convolution:
         imgs = np.pad(imgs, pad_width=((0,0),(pad[0], pad[0]), (pad[1], pad[1])))
         self.X = imgs
         for i, img in enumerate(imgs):
-            out[i] = convolve(img, self.kernel, self.bias)
+            out[i] = convolve(img, self.kernel, self.b)
         return out
 
     def backward(self, dX_out):
@@ -117,3 +133,16 @@ class Convolution:
             return h_in-k+1, w_in-k+1
         else:
             raise
+
+    def get_params_grad(self):
+        params_info = {
+            "kernel": {
+                "current": self.kernel,
+                "grad": self.dk
+            },
+            "b": {
+                "current": self.b,
+                "grad": self.db
+            }
+        }
+        return params_info

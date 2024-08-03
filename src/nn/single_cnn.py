@@ -17,21 +17,20 @@ class SingleCNN(BaseNeuralNet):
         n, _, _ = input_dim
         self.max_pooling = MaxPooling(input_dim=(n, self.cnn.h_out, self.cnn.w_out),
                                       k=pooling_size)
-        # self.sigmoid = Sigmoid()
+        self.sigmoid = Sigmoid()
         self.softmax = Softmax()
-
-        # h = self.cnn.out_h - (pooling_size - 1)
-        # w = self.cnn.out_w - (pooling_size - 1)
 
         h_out = self.max_pooling.h_out
         w_out = self.max_pooling.w_out
         self.fc = Linear(input_dim=h_out*w_out, output_dim=output_dim)
 
+        self.gradient_step_layers = [self.cnn, self.fc]
+
     def forward(self, x):
         n, h_in, w_in = x.shape
         x = self.cnn.forward(x) # (n, h_out, w_out)
         x = self.max_pooling.forward(x) # (n, h_out // k, w_out // k)
-        # x = self.sigmoid.forward(x)
+        x = self.sigmoid.forward(x)
         x = self.fc.forward(x.reshape(n,-1)) # (n, h_out*w_out) -> (n, out_dim)
         x = self.softmax.forward(x)
         return x
@@ -49,10 +48,19 @@ class SingleCNN(BaseNeuralNet):
         X: np.ndarray (n, h_in, w_in)
             Arrary of input images
         """
-        dhaty = self.softmax.backward(y)
+        n, _ = y.shape
+        dhaty = self.softmax.backward(y) # (n, n_label)
+        dx = self.fc.backward(dhaty) # (n, h_in)
+        dx = self.max_pooling.backward(dx.reshape(n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
+        dx = self.cnn.backward(dx) # (n, h_in, w_in)
+        return dx
 
     def step(self, lr):
-        pass
+        for layer in self.gradient_step_layers:
+            params_info = layer.get_params_grad()
+            for param,info in params_info.items():
+                param_grad_step = info["current"] - lr*info["grad"]
+                setattr(layer, param, param_grad_step)
 
     def zero_grad(self):
         pass
@@ -66,10 +74,11 @@ if __name__ == "__main__":
     target = [int(i) for i in mnist.target]
     num_label = len(np.unique(target))
     one_hot_target = np.eye(num_label)[target]
-    epoch = 10
+    epoch = 100
 
     imgs = np.random.normal(0, 0.5, (100, 15, 15))
     output_dim = 9
+    y = np.eye(output_dim)[np.random.choice(output_dim, 100)]
     kernel_dim = (3,3)
     padding = "same"
     pooling_size = 3
@@ -80,7 +89,20 @@ if __name__ == "__main__":
                     padding=padding,
                     pooling_size=pooling_size)
 
-    print(cnn.forward(imgs).shape)
+
+    for i in range(epoch):
+
+        y_pred_prob = cnn.forward(imgs)
+        y_pred = y_pred_prob.argmax(axis=1)
+        cnn.backward(y, y_pred_prob, imgs)
+        cnn.step(0.01)
+
+        loss = cross_entropy(y, y_pred_prob)
+        correct = (y_pred == y.argmax(axis=1)).sum()
+
+        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+
+        # break
 
     # for i in range(epoch):
     #
