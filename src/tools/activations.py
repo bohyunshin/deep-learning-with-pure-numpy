@@ -23,11 +23,11 @@ class MaxPooling:
         """
         k = self.k
         n, h_in, w_in = x.shape
-        if h_in % k != 0 or w_in % k != 0:
+        if h_in % k != 0 or w_in % k != 0: # no stride assumed
             raise
         h_out, w_out = h_in // k, w_in // k
-        out = []
-        for img in x:
+        out = np.zeros((n, h_out, w_out))
+        for i,img in enumerate(x):
             tmp = np.zeros((h_out, w_out))
             cache = []
             for i in range(h_out):
@@ -37,10 +37,10 @@ class MaxPooling:
                     max_val = img[row,col]
                     tmp[i][j] = max_val
                     cache.append((row,col))
-            out.append(tmp)
+            out[i] = tmp
             self._cache.append(cache)
 
-        return np.ndarray(out)
+        return out
 
     def backward(self, dX_out):
         n, h_out, w_out = dX_out.shape
@@ -49,7 +49,7 @@ class MaxPooling:
         for i in range(n):
             c = self._cache[i]
             for j,(row,col) in enumerate(c):
-                dX_in[i][row][col] = dX_out[i][j // self.k, j % self.k]
+                dX_in[i][row][col] = dX_out[i][j // h_out, j % w_out]
         return dX_in
 
 
