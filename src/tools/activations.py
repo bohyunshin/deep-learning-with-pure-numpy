@@ -54,12 +54,13 @@ class MaxPooling:
         for i,img in enumerate(x):
             tmp = np.zeros((h_out, w_out))
             cache = []
-            for i in range(h_out):
-                for j in range(w_out):
-                    idx = img[i*k:(i+1)*k, j*k:(j+1)*k].argmax()
-                    row, col = idx // h_in, idx % w_in
-                    max_val = img[row,col]
-                    tmp[i][j] = max_val
+            for r in range(h_out):
+                for c in range(w_out):
+                    max_val = img[r*k:(r+1)*k, c*k:(c+1)*k].max()
+                    row,col = list(zip(*np.where(img == max_val)))[0]
+                    # row, col = idx // h_in, idx % w_in
+                    # max_val = img[row,col]
+                    tmp[r][c] = max_val
                     cache.append((row,col))
             out[i] = tmp
             self._cache.append(cache)

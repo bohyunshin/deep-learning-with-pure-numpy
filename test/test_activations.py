@@ -6,16 +6,25 @@ from src.tools.activations import MaxPooling
 
 
 def test_max_pooling():
-    n = 100
-    h_in, w_in = 15, 15
-    k = 3
-    h_out, w_out = h_in // k, w_in // k
+    n = 1
+    k = 2
 
-    imgs = np.random.normal(0, 0.5, (n, h_in, w_in))
+    imgs = np.arange(16).reshape(n,4,4)
 
-    max_pooling = MaxPooling(k=k)
+    max_pooling = MaxPooling(input_dim=(n,4,4),k=k)
     out = max_pooling.forward(imgs)
-    assert out.shape == (n, h_out, w_out)
+    out_expected = np.array([[5,7],[13,15]]).reshape(n,2,2)
+
+    # forward test
+    np.testing.assert_array_equal(out_expected, out)
+
+    # backward test
     out_grad = np.random.normal(0, 0.5, out.shape)
     in_grad = max_pooling.backward(out_grad)
-    assert in_grad.shape == (n, h_in, w_in)
+
+    in_grad_expected = np.zeros_like(imgs, dtype=np.float64)
+    in_grad_expected[0][1][1] = out_grad[0][0][0]
+    in_grad_expected[0][1][3] = out_grad[0][0][1]
+    in_grad_expected[0][3][1] = out_grad[0][1][0]
+    in_grad_expected[0][3][3] = out_grad[0][1][1]
+    np.testing.assert_array_equal(in_grad_expected, in_grad)
