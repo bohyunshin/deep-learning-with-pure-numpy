@@ -76,46 +76,18 @@ if __name__ == "__main__":
     one_hot_target = np.eye(num_label)[target]
     epoch = 100
 
-    imgs = np.random.normal(0, 0.5, (100, 15, 15))
-    output_dim = 9
-    y = np.eye(output_dim)[np.random.choice(output_dim, 100)]
-    kernel_dim = (3,3)
-    padding = "same"
-    pooling_size = 3
-
-    cnn = SingleCNN(input_dim=imgs.shape,
-                    output_dim=output_dim,
-                    kernel_dim=kernel_dim,
-                    padding=padding,
-                    pooling_size=pooling_size)
-
-
     for i in range(epoch):
 
-        y_pred_prob = cnn.forward(imgs)
-        y_pred = y_pred_prob.argmax(axis=1)
-        cnn.backward(y, y_pred_prob, imgs)
-        cnn.step(0.01)
+        loss = 0
+        correct = 0
 
-        loss = cross_entropy(y, y_pred_prob)
-        correct = (y_pred == y.argmax(axis=1)).sum()
+        for x,y in zip(X, one_hot_target):
+            y_prob_pred = cnn.forward(x)
+            y_pred = y_prob_pred.argmax()
 
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+            correct += (y_pred == y.argmax())
+            loss += cross_entropy(y, y_prob_pred)
 
-        # break
+        print(f"epoch {epoch}: {round(loss, 4)} loss / {round(correct / len(X), 4)} accuracy")
 
-    # for i in range(epoch):
-    #
-    #     loss = 0
-    #     correct = 0
-    #
-    #     for x,y in zip(X, one_hot_target):
-    #         y_prob_pred = cnn.forward(x)
-    #         y_pred = y_prob_pred.argmax()
-    #
-    #         correct += (y_pred == y.argmax())
-    #         loss += cross_entropy(y, y_prob_pred)
-    #
-    #     print(f"epoch {epoch}: {round(loss, 4)} loss / {round(correct / len(X), 4)} accuracy")
-    #
-    #     break
+        break
