@@ -6,10 +6,12 @@ class Relu:
         pass
 
     def forward(self, x):
-        return x * (x > 0)
+        self.arg_pos = x > 0
+        return x * self.arg_pos
 
-    def backward(self):
-        pass
+    def backward(self, dx_out):
+        arg_pos = self.arg_pos.reshape(dx_out.shape)
+        return dx_out * arg_pos
 
 class Sigmoid:
     def __init__(self):
@@ -37,7 +39,6 @@ class Sigmoid:
             Derivative of sigmoid function.
         """
         frw = self.frw.reshape(dx_out.shape)
-        # frw = self.forward(self.x)
         return frw * (1-frw) * dx_out
 
 

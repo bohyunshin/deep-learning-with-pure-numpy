@@ -2,8 +2,37 @@ import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), "src"))
 import numpy as np
-from tools.activations import MaxPooling
+from tools.activations import MaxPooling, Relu
 
+
+def test_relu():
+    imgs = np.array([
+        [-1,1,-1],
+        [1,-1,1],
+        [-1,1,-1]
+    ]).reshape((1,3,3))
+
+    relu = Relu()
+    out = relu.forward(imgs)
+    out_expected = np.array([
+                [0,1,0],
+                [1,0,1],
+                [0,1,0]
+    ]).reshape((1,3,3))
+
+    # forward test
+    np.testing.assert_array_equal(out_expected, out)
+
+    # backward test
+    out_grad = np.random.normal(0, 0.5, out.shape)
+    in_grad = relu.backward(out_grad)
+
+    in_grad_expected = np.zeros_like(imgs, dtype=np.float64)
+    in_grad_expected[0][0][1] = in_grad[0][0][1]
+    in_grad_expected[0][1][0] = in_grad[0][1][0]
+    in_grad_expected[0][1][2] = in_grad[0][1][2]
+    in_grad_expected[0][2][1] = in_grad[0][2][1]
+    np.testing.assert_array_equal(in_grad_expected, in_grad)
 
 def test_max_pooling_equal_size():
     n = 1

@@ -2,7 +2,7 @@ import numpy as np
 
 from nn.base import BaseNeuralNet
 from nn.modules import Convolution, Linear
-from tools.activations import MaxPooling, Sigmoid, Softmax
+from tools.activations import MaxPooling, Sigmoid, Softmax, Relu
 from loss.classification import cross_entropy
 
 
@@ -19,6 +19,7 @@ class SingleCNN(BaseNeuralNet):
                                       k=pooling_size)
         self.sigmoid = Sigmoid()
         self.softmax = Softmax()
+        self.relu = Relu()
 
         h_out = self.max_pooling.h_out
         w_out = self.max_pooling.w_out
@@ -30,7 +31,8 @@ class SingleCNN(BaseNeuralNet):
         n, h_in, w_in = x.shape
         x = self.cnn.forward(x) # (n, h_out, w_out)
         x = self.max_pooling.forward(x) # (n, h_out // k, w_out // k)
-        x = self.sigmoid.forward(x)
+        # x = self.sigmoid.forward(x)
+        x = self.relu.forward(x)
         x = self.fc.forward(x.reshape(n,-1)) # (n, h_out*w_out) -> (n, out_dim)
         x = self.softmax.forward(x)
         return x
@@ -51,7 +53,8 @@ class SingleCNN(BaseNeuralNet):
         n, _ = y.shape
         dhaty = self.softmax.backward(y) # (n, n_label)
         dx = self.fc.backward(dhaty) # (n, h_in)
-        dx = self.sigmoid.backward(dx)
+        # dx = self.sigmoid.backward(dx)
+        dx = self.relu.backward(dx)
         dx = self.max_pooling.backward(dx.reshape(n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
         dx = self.cnn.backward(dx) # (n, h_in, w_in)
         return dx
@@ -96,4 +99,4 @@ if __name__ == "__main__":
         loss = cross_entropy(y, y_pred_prob)
         correct = (y_pred == y.argmax(axis=1)).sum()
 
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 1000 * 100}%")
+        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 10000 * 100}%")
