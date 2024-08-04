@@ -51,6 +51,7 @@ class SingleCNN(BaseNeuralNet):
         n, _ = y.shape
         dhaty = self.softmax.backward(y) # (n, n_label)
         dx = self.fc.backward(dhaty) # (n, h_in)
+        dx = self.sigmoid.backward(dx)
         dx = self.max_pooling.backward(dx.reshape(n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
         dx = self.cnn.backward(dx) # (n, h_in, w_in)
         return dx
@@ -69,25 +70,30 @@ if __name__ == "__main__":
     from sklearn.datasets import fetch_openml
 
     mnist = fetch_openml('mnist_784', as_frame=False)
-    X = [x.reshape(28, -1) for x in mnist.data]
-    h = X[0].shape[0]
-    target = [int(i) for i in mnist.target]
+    n, r_c = mnist.data[:10000].shape
+    X = mnist.data[:10000].reshape(n, int(np.sqrt(r_c)), -1)
+    target = [int(i) for i in mnist.target[:10000]]
     num_label = len(np.unique(target))
-    one_hot_target = np.eye(num_label)[target]
-    epoch = 100
+    y = np.eye(num_label)[target]
+
+    kernel_dim = (3, 3)
+    padding = "same"
+    pooling_size = 3
+    epoch = 30
+
+    cnn = SingleCNN(input_dim=X.shape,
+                    output_dim=num_label,
+                    kernel_dim=kernel_dim,
+                    padding=padding,
+                    pooling_size=pooling_size)
 
     for i in range(epoch):
+        y_pred_prob = cnn.forward(X)
+        y_pred = y_pred_prob.argmax(axis=1)
+        cnn.backward(y, y_pred_prob, X)
+        cnn.step(0.01)
 
-        loss = 0
-        correct = 0
+        loss = cross_entropy(y, y_pred_prob)
+        correct = (y_pred == y.argmax(axis=1)).sum()
 
-        for x,y in zip(X, one_hot_target):
-            y_prob_pred = cnn.forward(x)
-            y_pred = y_prob_pred.argmax()
-
-            correct += (y_pred == y.argmax())
-            loss += cross_entropy(y, y_prob_pred)
-
-        print(f"epoch {epoch}: {round(loss, 4)} loss / {round(correct / len(X), 4)} accuracy")
-
-        break
+        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 1000 * 100}%")

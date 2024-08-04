@@ -35,4 +35,33 @@ def test_single_cnn_dummy_data():
 
 
 def test_single_cnn_mnist_data():
-    pass
+    from sklearn.datasets import fetch_openml
+
+    mnist = fetch_openml('mnist_784', as_frame=False)
+    n, r_c = mnist.data.shape
+    X = mnist.data.reshape(n,int(np.sqrt(r_c)),-1)
+    target = [int(i) for i in mnist.target]
+    num_label = len(np.unique(target))
+    y = np.eye(num_label)[target]
+
+    kernel_dim = (3, 3)
+    padding = "same"
+    pooling_size = 3
+    epoch = 30
+
+    cnn = SingleCNN(input_dim=X.shape,
+                    output_dim=num_label,
+                    kernel_dim=kernel_dim,
+                    padding=padding,
+                    pooling_size=pooling_size)
+
+    for i in range(epoch):
+        y_pred_prob = cnn.forward(X)
+        y_pred = y_pred_prob.argmax(axis=1)
+        cnn.backward(y, y_pred_prob, X)
+        cnn.step(0.01)
+
+        loss = cross_entropy(y, y_pred_prob)
+        correct = (y_pred == y.argmax(axis=1)).sum()
+
+        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")

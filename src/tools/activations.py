@@ -1,6 +1,16 @@
 import numpy as np
 
 
+class Relu:
+    def __init__(self):
+        pass
+
+    def forward(self, x):
+        return x * (x > 0)
+
+    def backward(self):
+        pass
+
 class Sigmoid:
     def __init__(self):
         pass
@@ -16,17 +26,19 @@ class Sigmoid:
         out: np.ndarray (n,)
         """
         self.x = x
-        return 1 / (1 + np.exp(-x))
+        self.frw = 1 / (1 + np.exp(-x))
+        return self.frw
 
-    def backward(self):
+    def backward(self, dx_out):
         """
         returns
         -------
         out: np.ndarray (n,)
             Derivative of sigmoid function.
         """
-        frw = self.forward(self.x)
-        return frw * (1-frw)
+        frw = self.frw.reshape(dx_out.shape)
+        # frw = self.forward(self.x)
+        return frw * (1-frw) * dx_out
 
 
 class MaxPooling:
@@ -89,7 +101,7 @@ class Softmax:
         -------
         y_pred: np.ndarray (n, n_label)
         """
-        x = np.exp(x)
+        x = np.exp(x - x.max(axis=1).reshape(-1,1))
         y_pred = x / x.sum(axis=1).reshape(-1,1)
         self.y_pred = y_pred
         return y_pred
