@@ -73,9 +73,9 @@ if __name__ == "__main__":
     from sklearn.datasets import fetch_openml
 
     mnist = fetch_openml('mnist_784', as_frame=False)
-    n, r_c = mnist.data[:10000].shape
-    X = mnist.data[:10000].reshape(n, int(np.sqrt(r_c)), -1)
-    target = [int(i) for i in mnist.target[:10000]]
+    n, r_c = mnist.data[:1000].shape
+    X = mnist.data[:1000].reshape(n, int(np.sqrt(r_c)), -1)
+    target = [int(i) for i in mnist.target[:1000]]
     num_label = len(np.unique(target))
     y = np.eye(num_label)[target]
 
@@ -99,4 +99,4 @@ if __name__ == "__main__":
         loss = cross_entropy(y, y_pred_prob)
         correct = (y_pred == y.argmax(axis=1)).sum()
 
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 10000 * 100}%")
+        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 1000 * 100}%")

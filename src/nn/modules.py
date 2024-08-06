@@ -10,6 +10,12 @@ class Linear:
         self.w = np.random.normal(0, 0.5, (input_dim, output_dim))
         self.b = np.random.normal(0, 0.5, output_dim)
 
+        self.w = np.random.uniform(-0.1, 0.1, (input_dim, output_dim))
+        self.b = np.random.uniform(-0.1, 0.1, output_dim)
+
+        self.w = np.random.randn(input_dim, output_dim) / np.sqrt(input_dim)
+        self.b = np.random.randn(output_dim) / np.sqrt(input_dim)
+
         self.weight_grad = None
         self.bias_grad = None
 
@@ -55,6 +61,12 @@ class Convolution:
         self.padding = padding
         self.kernel = np.random.normal(0, 0.5, kernel_dim)
         self.b = np.random.normal(0, 0.5, 1)
+
+        self.kernel = np.random.uniform(-0.1,0.1,kernel_dim)
+        self.b = np.random.uniform(-0.1,0.1,1)
+
+        self.kernel = np.random.randn(kernel_dim[0], kernel_dim[1]) / np.sqrt(h_in * w_in)
+        self.b = np.random.randn(1) / np.sqrt(h_in * w_in)
 
         h_out, w_out = self.calculate_out_dims(h_in, w_in)
         self.h_out = h_out
