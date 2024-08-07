@@ -1,9 +1,33 @@
 import numpy as np
+import torch
+from torch import nn, optim
+from torch.utils.data import DataLoader, Dataset
 import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), "src"))
+sys.path.append(os.path.join(os.getcwd(), "test"))
+
 from nn.single_cnn import SingleCNN
+from nn.mlp import MultipleLayerPerceptron
 from loss.classification import cross_entropy
+from loss.regression import mean_squared_error
+from torch_model import Regressor
+
+
+# torch의 Dataset 을 상속.
+class TensorData(Dataset):
+
+    def __init__(self, x_data, y_data):
+        self.x_data = torch.FloatTensor(x_data)
+        self.y_data = torch.FloatTensor(y_data)
+        self.len = self.y_data.shape[0]
+
+    def __getitem__(self, index):
+
+        return self.x_data[index], self.y_data[index]
+
+    def __len__(self):
+        return self.len
 
 
 def test_single_cnn_dummy_data():
@@ -65,3 +89,73 @@ def test_single_cnn_mnist_data():
         correct = (y_pred == y.argmax(axis=1)).sum()
 
         print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+
+
+def test_mlp_reg_same_as_torch():
+    n = 1000
+    k = 4
+    struct = [4, 1]
+
+    # data generation
+    np.random.seed(1)
+    X = np.random.randn(n, k)
+    y = np.cos(X).sum(axis=1).reshape(n, 1)
+    epoch = 1
+
+    # weight, bias generation
+    np.random.seed(1)
+    weight = np.random.uniform(-0.1, 0.1, (1, 4))
+    bias = np.random.uniform(-0.1, 0.1, 1)
+
+    ###### numpy implementation ######
+    mlp = MultipleLayerPerceptron(struct=struct, n=n)
+    mlp.layers[0].w = weight.T
+    mlp.layers[0].b = bias
+    loss_ = []
+    for _ in range(epoch):
+        # forward pass
+        pred = mlp.forward(X)
+
+        # calculate loss
+        loss = mean_squared_error(y, pred)
+        loss_.append(loss)
+
+        # backward
+        mlp.backward(y, pred)
+
+        # gradient descent
+        mlp.step(0.001)
+
+    ###### torch implementation ######
+    trainsets = TensorData(X, y)
+    trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n) # assuming batch gradient descent
+    model = Regressor()
+    criterion = nn.MSELoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    model.fc1.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
+    model.fc1.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
+
+    loss_ = []
+    n_batch = len(trainloader)
+
+    for _ in range(epoch):
+
+        running_loss = 0.0
+
+        for i, data in enumerate(trainloader, 0):
+
+            X_train, y_true = data
+
+            optimizer.zero_grad()
+
+            y_pred = model(X_train)
+            loss = criterion(y_pred, y_true)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+
+        loss_.append(running_loss / n_batch)
+
+    np.testing.assert_array_almost_equal(mlp.layers[0].dw, model.fc1.weight.grad.numpy().T, decimal=6)
+    np.testing.assert_array_almost_equal(mlp.layers[0].db, model.fc1.bias.grad.numpy(), decimal=6)

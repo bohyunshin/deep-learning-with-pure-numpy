@@ -9,6 +9,8 @@ def train(epoch):
     n = 1000
     k = 4
     struct = [4, 3, 2, 1]
+    struct = [4, 1]
+    np.random.seed(1)
     X = np.random.randn(n, k)
     y = np.cos(X).sum(axis=1).reshape(n,1)
 
@@ -21,16 +23,17 @@ def train(epoch):
 
         # calculate loss
         loss = mean_squared_error(y, pred)
+        print(loss)
         loss_.append(loss)
 
         # backward
-        nn.backward(y, pred, X)
+        nn.backward_(y, pred)
 
         # gradient descent
-        nn.step(0.001)
+        nn.step_(0.001)
 
         # clear gradient
-        nn.zero_grad()
+        # nn.zero_grad()
 
     sns.lineplot(loss_)
     plt.ylabel("loss")
@@ -38,4 +41,4 @@ def train(epoch):
     plt.show()
 
 if __name__ == "__main__":
-    train(50000)
+    train(5000)

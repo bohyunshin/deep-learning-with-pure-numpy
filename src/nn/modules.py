@@ -7,17 +7,8 @@ class Linear:
     def __init__(self, input_dim, output_dim):
         self.input_dim = input_dim
         self.output_dim = output_dim
-        self.w = np.random.normal(0, 0.5, (input_dim, output_dim))
-        self.b = np.random.normal(0, 0.5, output_dim)
-
         self.w = np.random.uniform(-0.1, 0.1, (input_dim, output_dim))
         self.b = np.random.uniform(-0.1, 0.1, output_dim)
-
-        self.w = np.random.randn(input_dim, output_dim) / np.sqrt(input_dim)
-        self.b = np.random.randn(output_dim) / np.sqrt(input_dim)
-
-        self.weight_grad = None
-        self.bias_grad = None
 
         self.dw = None
         self.db = None
