@@ -7,7 +7,7 @@ from nn.modules import Linear
 np.random.seed(1)
 
 
-class MultipleLayerPerceptron:
+class MultipleLayerPerceptronRegression:
     def __init__(self, struct, n):
         super().__init__()
         self.struct = struct
@@ -19,9 +19,6 @@ class MultipleLayerPerceptron:
             self.layers.append(fc)
             self.gradient_step_layers.append(fc)
             self.layers.append(Relu())
-            # if i != len(struct)-1:
-            #     # self.layers.append( Sigmoid() )
-            #     self.layers.append( Relu() )
 
     def forward(self, x):
         self.activated_val = [x]
@@ -42,9 +39,3 @@ class MultipleLayerPerceptron:
             for param,info in params_info.items():
                 param_grad_step = info["current"] - lr*info["grad"]
                 setattr(layer, param, param_grad_step)
-
-    def zero_grad(self):
-        for layer in self.layers:
-            if layer.__class__.__name__ == "Linear":
-                layer.weight_grad = None
-                layer.bias_grad = None

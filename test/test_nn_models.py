@@ -8,7 +8,7 @@ sys.path.append(os.path.join(os.getcwd(), "src"))
 sys.path.append(os.path.join(os.getcwd(), "test"))
 
 from nn.single_cnn import SingleCNN
-from nn.mlp import MultipleLayerPerceptron
+from nn.mlp import MultipleLayerPerceptronRegression
 from loss.classification import cross_entropy
 from loss.regression import mean_squared_error
 from torch_model import Regressor
@@ -108,7 +108,7 @@ def test_mlp_reg_same_as_torch():
     bias = np.random.uniform(-0.1, 0.1, 1)
 
     ###### numpy implementation ######
-    mlp = MultipleLayerPerceptron(struct=struct, n=n)
+    mlp = MultipleLayerPerceptronRegression(struct=struct, n=n)
     mlp.layers[0].w = weight.T
     mlp.layers[0].b = bias
     loss_ = []
