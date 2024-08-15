@@ -2,7 +2,7 @@ import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), "src"))
 import numpy as np
-from tools.activations import MaxPooling, Relu
+from tools.activations import MaxPooling, Relu, Softmax
 
 
 def test_relu():
@@ -81,3 +81,31 @@ def test_max_pooling_unequal_size():
     in_grad_expected[0][3][2] = out_grad[0][1][0]
     in_grad_expected[0][3][3] = out_grad[0][1][1]
     np.testing.assert_array_equal(in_grad_expected, in_grad)
+
+
+def test_softmax():
+    n = 4
+    L = 3
+
+    logits = np.random.normal(0, 0.5, (n, L))
+    dx_out = np.random.normal(0, 0.5, (n, L))
+
+    softmax = Softmax()
+
+    # forward
+    out = softmax.forward(logits)
+
+    # backward
+    dx_in = softmax.backward(dx_out)
+
+    I = np.identity(L)
+    for i in range(n):
+        yhat = out[i]
+        mat = np.array([
+            yhat, yhat, yhat
+        ])
+        right = I - mat
+        left = mat.T
+        jacobian = left * right
+        grad = np.dot(dx_out[i], jacobian)
+        np.testing.assert_array_almost_equal(dx_in[i], grad)

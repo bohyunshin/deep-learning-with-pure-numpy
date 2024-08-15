@@ -105,16 +105,47 @@ class Softmax:
         x = np.exp(x - x.max(axis=1).reshape(-1,1))
         y_pred = x / x.sum(axis=1).reshape(-1,1)
         self.y_pred = y_pred
+        self.x = x
         return y_pred
 
-    def backward(self, y_true):
+    def backward(self, dx_out):
         """
+        Step 1
+        Calculate jacobian matrix (L, L)
+        dyhat_i1/dz_i1 ... dyhat_i1/dz_iL
+        ...
+        dyhat_iL/dz_i1 ... dyhat_LL/dz_iL
+
+        Note that for each data point, L x L jacobian matrix should be calculated. (N, L, L)
+
+        Step 2
+        Calculate downstream gradient
+        dL/dz_ik = \sum_j dyhat_ij/dz_ik x dL/dhat_ij
+
+        Note that because it is downstream gradient, its dimension is (N, L)
+
         params
         ------
-        y_true: np.ndarray (n, n_label)
+        dx_out: np.ndarray (n, n_label)
 
         returns
         -------
         out_grad: np.ndarray (n, n_label)
         """
-        return self.y_pred - y_true
+        # step 1
+        n, L = dx_out.shape
+        jacobian = np.zeros((n, L, L))
+        I = np.identity(L)
+        for i in range(n):
+            y_pred_i = self.y_pred[i]
+            right = I - np.tile(y_pred_i, L).reshape(L, L)
+            left = np.tile(y_pred_i, L).reshape(L, L).T
+            jacobian[i] = left * right
+
+        # step 2
+        dx_in = np.zeros((n, L))
+        for i in range(n):
+            dL_dz_ij = np.dot(dx_out[i], jacobian[i]) # (1, L)
+            dx_in[i] = dL_dz_ij
+
+        return dx_in

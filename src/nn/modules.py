@@ -20,7 +20,7 @@ class Linear:
         x = np.dot(x, self.w) + self.b.reshape(1, self.output_dim)
         return x # shape: (num_of_data, output_dim)
 
-    def backward(self, dx_out):
+    def backward(self, dx_out, **kwargs):
         """
         params
         ------
