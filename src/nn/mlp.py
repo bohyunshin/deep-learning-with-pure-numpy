@@ -3,6 +3,8 @@ import numpy as np
 from nn.base import BaseNeuralNet
 from tools.activations import Relu, Softmax
 from nn.modules import Linear
+from loss.classification import CrossEntropyLoss
+from loss.regression import MeanSquaredError
 
 
 class MultipleLayerPerceptronRegression:
@@ -10,8 +12,14 @@ class MultipleLayerPerceptronRegression:
         super().__init__()
         self.struct = struct
         self.n = n
-        if model not in ["regression", "classification"]:
+
+        if model == "regression":
+            self.loss = MeanSquaredError()
+        elif model == "classification":
+            self.loss = CrossEntropyLoss()
+        else:
             raise
+
         self.model = model
         self.layers = []
         self.gradient_step_layers = []
@@ -40,10 +48,7 @@ class MultipleLayerPerceptronRegression:
 
         """
         # calculate initial gradient w.r.t. loss function
-        if self.model == "regression":
-            dx = (pred - y) / self.n * 2
-        else:
-            dx = -y / pred + (1-y) / (1-pred)
+        dx = self.loss.backward(y, pred)
 
         # backpropagation
         for layer in self.layers[::-1]:
