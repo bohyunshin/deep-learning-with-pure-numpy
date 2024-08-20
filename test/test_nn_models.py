@@ -185,22 +185,26 @@ def test_mlp_classification_same_as_torch():
     bias = np.random.uniform(-0.1, 0.1, 1)
 
     ###### numpy implementation ######
+
     mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
+
+    # set weight, bias same as torch model
     mlp.layers[0].w = weight.T
     mlp.layers[0].b = bias
+
     loss_ = []
     ce_loss = CrossEntropyLoss()
     for _ in range(epoch):
         # forward pass
-        pred = mlp.forward(X)
+        prob_pred = mlp.forward(X) # not logit, probability prediction
 
         # calculate loss
-        loss = ce_loss.forward(y, pred)
+        loss = ce_loss.forward(y, prob_pred)
         print(loss)
         loss_.append(loss)
 
         # backward
-        mlp.backward(y, pred)
+        mlp.backward(y, prob_pred)
 
         # gradient descent
         mlp.step(0.001)
