@@ -3,7 +3,7 @@ import numpy as np
 from nn.base import BaseNeuralNet
 from nn.modules import Convolution, Linear
 from tools.activations import MaxPooling, Sigmoid, Softmax, Relu
-from loss.classification import cross_entropy
+from loss.classification import CrossEntropyLoss
 
 
 class SingleCNN(BaseNeuralNet):

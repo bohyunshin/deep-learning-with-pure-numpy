@@ -25,3 +25,14 @@ def convolve(img, kernel, bias=0, stride=1, full=False):
             out[i, j] = (img[i:i + k, j:j + k] * kernel).sum() + bias
     return out
 
+def one_hot_vector(n_label, y_true):
+    """
+    params
+    ------
+    n_label: int
+        Number of labels
+
+    y_true: np.ndarray
+        True labels, e.g., [0, 3, 2, 0, 1], which is not converted to one hot vector
+    """
+    return np.eye(n_label)[y_true]

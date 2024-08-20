@@ -7,7 +7,7 @@ from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
 
 
-class MultipleLayerPerceptronRegression:
+class MultipleLayerPerceptron:
     def __init__(self, struct, n, model="regression"):
         super().__init__()
         self.struct = struct
@@ -20,7 +20,6 @@ class MultipleLayerPerceptronRegression:
         else:
             raise
 
-        self.model = model
         self.layers = []
         self.gradient_step_layers = []
         for i in range(1, len(struct)):
@@ -28,7 +27,7 @@ class MultipleLayerPerceptronRegression:
             self.layers.append(fc)
             self.gradient_step_layers.append(fc)
             self.layers.append(Relu())
-        if self.model == "classification":
+        if model == "classification":
             self.layers.append(Softmax())
 
     def forward(self, x):

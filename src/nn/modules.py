@@ -17,7 +17,7 @@ class Linear:
         # shape of x: (num_of_data, input_dim)
         assert x.shape[1] == self.input_dim
         self.x = x
-        x = np.dot(x, self.w) + self.b.reshape(1, self.output_dim)
+        x = np.dot(x, self.w) + self.b
         return x # shape: (num_of_data, output_dim)
 
     def backward(self, dx_out, **kwargs):

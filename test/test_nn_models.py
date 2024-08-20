@@ -8,10 +8,11 @@ sys.path.append(os.path.join(os.getcwd(), "src"))
 sys.path.append(os.path.join(os.getcwd(), "test"))
 
 from nn.single_cnn import SingleCNN
-from nn.mlp import MultipleLayerPerceptronRegression
-from loss.classification import cross_entropy
-from loss.regression import mean_squared_error
-from torch_model import Regressor
+from nn.mlp import MultipleLayerPerceptron
+from loss.classification import CrossEntropyLoss
+from loss.regression import MeanSquaredError
+from torch_model import TorchMLP
+from tools.utils import one_hot_vector
 
 
 # torch의 Dataset 을 상속.
@@ -44,6 +45,7 @@ def test_single_cnn_dummy_data():
                     kernel_dim=kernel_dim,
                     padding=padding,
                     pooling_size=pooling_size)
+    ce_loss = CrossEntropyLoss()
 
     for i in range(epoch):
 
@@ -52,7 +54,7 @@ def test_single_cnn_dummy_data():
         cnn.backward(y, y_pred_prob, imgs)
         cnn.step(0.01)
 
-        loss = cross_entropy(y, y_pred_prob)
+        loss = ce_loss.forward(y, y_pred_prob)
         correct = (y_pred == y.argmax(axis=1)).sum()
 
         print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
@@ -78,6 +80,7 @@ def test_single_cnn_mnist_data():
                     kernel_dim=kernel_dim,
                     padding=padding,
                     pooling_size=pooling_size)
+    ce_loss = CrossEntropyLoss()
 
     for i in range(epoch):
         y_pred_prob = cnn.forward(X)
@@ -85,7 +88,7 @@ def test_single_cnn_mnist_data():
         cnn.backward(y, y_pred_prob, X)
         cnn.step(0.01)
 
-        loss = cross_entropy(y, y_pred_prob)
+        loss = ce_loss.forward(y, y_pred_prob)
         correct = (y_pred == y.argmax(axis=1)).sum()
 
         print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
@@ -108,16 +111,17 @@ def test_mlp_reg_same_as_torch():
     bias = np.random.uniform(-0.1, 0.1, 1)
 
     ###### numpy implementation ######
-    mlp = MultipleLayerPerceptronRegression(struct=struct, n=n)
+    mlp = MultipleLayerPerceptron(struct=struct, n=n, model="regression")
     mlp.layers[0].w = weight.T
     mlp.layers[0].b = bias
     loss_ = []
+    mse_loss = MeanSquaredError()
     for _ in range(epoch):
         # forward pass
         pred = mlp.forward(X)
 
         # calculate loss
-        loss = mean_squared_error(y, pred)
+        loss = mse_loss.forward(y, pred)
         loss_.append(loss)
 
         # backward
@@ -129,7 +133,7 @@ def test_mlp_reg_same_as_torch():
     ###### torch implementation ######
     trainsets = TensorData(X, y)
     trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n) # assuming batch gradient descent
-    model = Regressor()
+    model = TorchMLP(struct[0], struct[1])
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.01)
     model.fc1.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
@@ -159,3 +163,75 @@ def test_mlp_reg_same_as_torch():
 
     np.testing.assert_array_almost_equal(mlp.layers[0].dw, model.fc1.weight.grad.numpy().T, decimal=6)
     np.testing.assert_array_almost_equal(mlp.layers[0].db, model.fc1.bias.grad.numpy(), decimal=6)
+
+
+def test_mlp_classification_same_as_torch():
+    n = 1000
+    k = 4
+    L = 3
+    struct = [4, 3]
+
+    # data generation
+    from sklearn.datasets import make_gaussian_quantiles
+    X, y = make_gaussian_quantiles(cov=3.,
+                                     n_samples=n, n_features=k,
+                                     n_classes=L, random_state=1)
+    y = one_hot_vector(L, y)
+    epoch = 1
+
+    # weight, bias generation
+    np.random.seed(1)
+    weight = np.random.uniform(-0.1, 0.1, (3, 4))
+    bias = np.random.uniform(-0.1, 0.1, 1)
+
+    ###### numpy implementation ######
+    mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
+    mlp.layers[0].w = weight.T
+    mlp.layers[0].b = bias
+    loss_ = []
+    ce_loss = CrossEntropyLoss()
+    for _ in range(epoch):
+        # forward pass
+        pred = mlp.forward(X)
+
+        # calculate loss
+        loss = ce_loss.forward(y, pred)
+        print(loss)
+        loss_.append(loss)
+
+        # backward
+        mlp.backward(y, pred)
+
+        # gradient descent
+        mlp.step(0.001)
+
+    ###### torch implementation ######
+    trainsets = TensorData(X, y)
+    trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
+    model = TorchMLP(struct[0], struct[1])
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.01)
+    model.fc1.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
+    model.fc1.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
+
+    loss_ = []
+    n_batch = len(trainloader)
+
+    for _ in range(epoch):
+
+        running_loss = 0.0
+
+        for i, data in enumerate(trainloader, 0):
+            X_train, y_true = data
+
+            optimizer.zero_grad()
+
+            y_pred = model(X_train)
+            loss = criterion(y_pred, y_true)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+
+        loss_.append(running_loss / n_batch)
+        print(loss_)

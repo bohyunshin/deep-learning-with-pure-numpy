@@ -102,10 +102,11 @@ class Softmax:
         -------
         y_pred: np.ndarray (n, n_label)
         """
+        self.x = x
         x = np.exp(x - x.max(axis=1).reshape(-1,1))
         y_pred = x / x.sum(axis=1).reshape(-1,1)
         self.y_pred = y_pred
-        self.x = x
+        # self.x = x
         return y_pred
 
     def backward(self, dx_out):
