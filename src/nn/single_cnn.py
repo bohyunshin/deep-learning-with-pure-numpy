@@ -1,6 +1,6 @@
 from nn.base import BaseNeuralNet
 from nn.modules import Convolution, Linear
-from tools.activations import MaxPooling, Sigmoid, Softmax, Relu
+from tools.activations import MaxPooling, Softmax, Relu
 
 
 class SingleCNN(BaseNeuralNet):
@@ -15,7 +15,6 @@ class SingleCNN(BaseNeuralNet):
         self.n = n
         self.max_pooling = MaxPooling(input_dim=(n, self.cnn.h_out, self.cnn.w_out),
                                       k=pooling_size)
-        self.sigmoid = Sigmoid()
         self.softmax = Softmax()
         self.relu = Relu()
 
@@ -29,7 +28,6 @@ class SingleCNN(BaseNeuralNet):
         n, h_in, w_in = x.shape
         x = self.cnn.forward(x) # (n, h_out, w_out)
         x = self.max_pooling.forward(x) # (n, h_out // k, w_out // k)
-        # x = self.sigmoid.forward(x)
         x = self.relu.forward(x)
         x = self.fc.forward(x.reshape(n,-1)) # (n, h_out*w_out) -> (n, out_dim)
         x = self.softmax.forward(x)
@@ -44,7 +42,6 @@ class SingleCNN(BaseNeuralNet):
         """
         dx_out = self.softmax.backward(dx_out) # (n, n_label)
         dx_out = self.fc.backward(dx_out) # (n, h_in)
-        # dx = self.sigmoid.backward(dx)
         dx_out = self.relu.backward(dx_out)
         dx_out = self.max_pooling.backward(dx_out.reshape(self.n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
         dx_out = self.cnn.backward(dx_out) # (n, h_in, w_in)

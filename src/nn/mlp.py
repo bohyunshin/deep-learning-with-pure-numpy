@@ -7,7 +7,7 @@ from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
 
 
-class MultipleLayerPerceptron:
+class MultipleLayerPerceptron(BaseNeuralNet):
     def __init__(self, struct, n, model="regression"):
         super().__init__()
         self.struct = struct
@@ -35,7 +35,7 @@ class MultipleLayerPerceptron:
             x = layer.forward(x)
         return x
 
-    def backward(self, y, pred):
+    def backward(self, dx_out):
         """
         params
         ------
@@ -46,12 +46,9 @@ class MultipleLayerPerceptron:
             Prediction value.
 
         """
-        # calculate initial gradient w.r.t. loss function
-        dx = self.loss.backward(y, pred)
-
         # backpropagation
         for layer in self.layers[::-1]:
-            dx = layer.backward(dx)
+            dx_out = layer.backward(dx_out)
 
     def step(self, lr):
         for layer in self.gradient_step_layers:
@@ -59,17 +56,3 @@ class MultipleLayerPerceptron:
             for param,info in params_info.items():
                 param_grad_step = info["current"] - lr*info["grad"]
                 setattr(layer, param, param_grad_step)
-
-
-class MultipleLayerPerceptronClassification:
-    def __init__(self, struct, n):
-        super().__init__()
-        self.struct = struct
-        self.n = n
-        self.layers = []
-        self.gradient_step_layers = []
-        for i in range(1, len(struct)):
-            fc = Linear(struct[i-1], struct[i])
-            self.layers.append(fc)
-            self.gradient_step_layers.append(fc)
-            self.layers.append(Relu())

@@ -144,10 +144,11 @@ def test_mlp_reg_same_as_torch():
 
         # calculate loss
         loss = mse_loss.forward(y, pred)
+        dx_out = mse_loss.backward(y, pred)
         loss_.append(loss)
 
         # backward
-        mlp.backward(y, pred)
+        mlp.backward(dx_out)
 
         # gradient descent
         mlp.step(0.001)
@@ -158,8 +159,8 @@ def test_mlp_reg_same_as_torch():
     model = TorchMLP(struct[0], struct[1])
     criterion = nn.MSELoss()
     optimizer = optim.SGD(model.parameters(), lr=0.01)
-    model.fc1.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
-    model.fc1.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
+    model.fc.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
+    model.fc.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
 
     loss_ = []
     n_batch = len(trainloader)
@@ -183,8 +184,8 @@ def test_mlp_reg_same_as_torch():
 
         loss_.append(running_loss / n_batch)
 
-    np.testing.assert_array_almost_equal(mlp.layers[0].dw, model.fc1.weight.grad.numpy().T, decimal=6)
-    np.testing.assert_array_almost_equal(mlp.layers[0].db, model.fc1.bias.grad.numpy(), decimal=6)
+    np.testing.assert_array_almost_equal(mlp.layers[0].dw, model.fc.weight.grad.numpy().T, decimal=6)
+    np.testing.assert_array_almost_equal(mlp.layers[0].db, model.fc.bias.grad.numpy(), decimal=6)
 
 
 def test_mlp_classification_same_as_torch():
@@ -210,6 +211,7 @@ def test_mlp_classification_same_as_torch():
     ###### numpy implementation ######
 
     mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
+    ce_loss = CrossEntropyLoss()
 
     # set weight, bias same as torch model
     mlp.layers[0].w = weight.T # (input_dim, output_dim)
@@ -221,11 +223,12 @@ def test_mlp_classification_same_as_torch():
         prob_pred = mlp.forward(X) # not logit, probability prediction
 
         # calculate loss
-        loss = mlp.loss.forward(y, prob_pred)
+        loss = ce_loss.forward(y, prob_pred)
+        dx_out = ce_loss.backward(y, prob_pred)
         loss_.append(loss)
 
         # backward
-        mlp.backward(y, prob_pred)
+        mlp.backward(dx_out)
 
         # gradient descent
         mlp.step(lr)
