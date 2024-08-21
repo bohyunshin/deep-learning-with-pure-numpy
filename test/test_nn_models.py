@@ -15,7 +15,6 @@ from torch_model import TorchMLP, TorchCNN
 from tools.utils import one_hot_vector
 
 
-# torch의 Dataset 을 상속.
 class TensorData(Dataset):
 
     def __init__(self, x_data, y_data):
