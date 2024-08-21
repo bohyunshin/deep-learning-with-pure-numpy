@@ -6,11 +6,11 @@ import numpy as np
 
 class TorchMLP(nn.Module):
     def __init__(self, in_features, out_features):
-        super().__init__()  # 모델 연산 정의
-        self.fc1 = nn.Linear(in_features, out_features, bias=True)
+        super().__init__()
+        self.fc = nn.Linear(in_features, out_features, bias=True)
 
     def forward(self, x):
-        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc(x))
         return x
 
 if __name__ == '__main__':

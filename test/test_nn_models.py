@@ -178,10 +178,11 @@ def test_mlp_classification_same_as_torch():
                                      n_classes=L, random_state=1)
     y = one_hot_vector(L, y)
     epoch = 1
+    lr = 0.01
 
     # weight, bias generation
     np.random.seed(1)
-    weight = np.random.uniform(-0.1, 0.1, (3, 4))
+    weight = np.random.uniform(-0.1, 0.1, (3, 4)) # for torch, (output_dim, input_dim)
     bias = np.random.uniform(-0.1, 0.1, 1)
 
     ###### numpy implementation ######
@@ -189,37 +190,36 @@ def test_mlp_classification_same_as_torch():
     mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
 
     # set weight, bias same as torch model
-    mlp.layers[0].w = weight.T
+    mlp.layers[0].w = weight.T # (input_dim, output_dim)
     mlp.layers[0].b = bias
 
     loss_ = []
-    ce_loss = CrossEntropyLoss()
     for _ in range(epoch):
         # forward pass
         prob_pred = mlp.forward(X) # not logit, probability prediction
 
         # calculate loss
-        loss = ce_loss.forward(y, prob_pred)
-        print(loss)
+        loss = mlp.loss.forward(y, prob_pred)
         loss_.append(loss)
 
         # backward
         mlp.backward(y, prob_pred)
 
         # gradient descent
-        mlp.step(0.001)
+        mlp.step(lr)
+    np_loss = loss
 
     ###### torch implementation ######
     trainsets = TensorData(X, y)
     trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
     model = TorchMLP(struct[0], struct[1])
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.SGD(model.parameters(), lr=0.01)
-    model.fc1.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
-    model.fc1.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
+    optimizer = optim.SGD(model.parameters(), lr=lr)
+    model.fc.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
+    model.fc.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
 
     loss_ = []
-    n_batch = len(trainloader)
+    n_batch = len(trainloader) # batch gradient descent (not mini-batch)
 
     for _ in range(epoch):
 
@@ -230,12 +230,16 @@ def test_mlp_classification_same_as_torch():
 
             optimizer.zero_grad()
 
-            y_pred = model(X_train)
-            loss = criterion(y_pred, y_true)
+            y_pred = model(X_train) # this is logit, not probability prediction
+            loss = criterion(y_pred, y_true) # logit should be input for nn.CrossEntropyLoss()
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
 
         loss_.append(running_loss / n_batch)
-        print(loss_)
+    torch_loss = loss.detach().numpy()
+
+    np.testing.assert_array_almost_equal(np_loss, torch_loss)
+    np.testing.assert_array_almost_equal(model.fc.bias.detach().numpy(), mlp.layers[0].b)
+    np.testing.assert_array_almost_equal(model.fc.weight.detach().numpy(), mlp.layers[0].w.T)
