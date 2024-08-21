@@ -1,12 +1,9 @@
-import numpy as np
-
 from nn.base import BaseNeuralNet
 from nn.modules import Convolution, Linear
 from tools.activations import MaxPooling, Sigmoid, Softmax, Relu
-from loss.classification import CrossEntropyLoss
 
 
-class SingleCNN:
+class SingleCNN(BaseNeuralNet):
     def __init__(self, input_dim, output_dim: int, kernel_dim: tuple , padding: str, pooling_size: int):
         super().__init__()
         self.cnn = Convolution(

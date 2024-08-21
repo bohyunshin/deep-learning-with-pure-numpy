@@ -10,13 +10,9 @@ class BaseNeuralNet:
         pass
 
     @abstractmethod
-    def backward(self, y, pred, X):
+    def backward(self, dx_out):
         pass
 
     @abstractmethod
     def step(self, lr):
-        pass
-
-    @abstractmethod
-    def zero_grad(self):
         pass
