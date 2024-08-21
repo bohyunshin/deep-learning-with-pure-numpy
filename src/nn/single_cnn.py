@@ -1,5 +1,6 @@
 from nn.base import BaseNeuralNet
-from nn.modules import Convolution, Linear
+from modules.linear import Linear
+from modules.convolution import Convolution
 from tools.activations import MaxPooling, Softmax, Relu
 
 

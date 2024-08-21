@@ -1,8 +1,6 @@
-import numpy as np
-
 from nn.base import BaseNeuralNet
 from tools.activations import Relu, Softmax
-from nn.modules import Linear
+from modules.linear import Linear
 from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
 
