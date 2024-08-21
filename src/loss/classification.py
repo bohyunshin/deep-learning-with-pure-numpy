@@ -1,10 +1,11 @@
 import numpy as np
+from loss.base import BaseLoss
 from tools.activations import Softmax
 
 
-class CrossEntropyLoss:
+class CrossEntropyLoss(BaseLoss):
     def __init__(self):
-        pass
+        super().__init__()
 
     def forward(self, y_true, y_prob_pred):
         """
