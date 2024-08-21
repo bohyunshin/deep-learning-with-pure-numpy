@@ -1,9 +1,11 @@
 import numpy as np
+from modules.base import BaseModule
 from tools.utils import convolve
 
 
-class Convolution:
+class Convolution(BaseModule):
     def __init__(self, input_dim, kernel_dim: tuple , padding: str):
+        super().__init__()
         n, h_in, w_in = input_dim
         self.padding = padding
 

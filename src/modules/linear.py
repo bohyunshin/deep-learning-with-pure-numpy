@@ -1,8 +1,10 @@
 import numpy as np
+from modules.base import BaseModule
 
 
-class Linear:
+class Linear(BaseModule):
     def __init__(self, input_dim, output_dim):
+        super().__init__()
         self.input_dim = input_dim
         self.output_dim = output_dim
         self.w = np.random.uniform(-0.1, 0.1, (input_dim, output_dim))
