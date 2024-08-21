@@ -35,18 +35,12 @@ class Convolution(BaseModule):
             out[i] = convolve(img, self.kernel, self.b)
         return out
 
-    def backward(self, dX_out):
+    def backward(self, dx_out):
         """
         params
         ------
-        dX_out: np.ndarray (n, h_out, w_out)
-            Upstream gradients of next layers. dimension
-        dk: np.ndarray (h_k, w_k)
-            Gradients of kernel, which is
-            convolution btw kernel and upstream gradients
-        db: np.ndarray
-            Gradients of bias, which is
-            sum of upstream gradients
+        dx_out: np.ndarray (n, h_out, w_out)
+            Upstream gradients from loss function.
 
         return
         ------
@@ -55,22 +49,22 @@ class Convolution(BaseModule):
             full convolution btw 180 degree rotated kernel and upstream gradients
         """
 
-        dX_in = np.zeros_like(self.X)
-        n, h_in, w_in = dX_in.shape
+        dx_in = np.zeros_like(self.X)
+        n, h_in, w_in = dx_in.shape
         dk = np.zeros_like(self.kernel)
-        db = dX_out.sum()
+        db = dx_out.sum()
 
-        for img, dX_out_i in zip(self.X, dX_out):
+        for img, dX_out_i in zip(self.X, dx_out):
             dk += convolve(img, dX_out_i)
 
         rotate_kernel = np.rot90(self.kernel, k=2)
         for i in range(n):
-            dX_in[i] = convolve(dX_out[i], rotate_kernel, full=True)
+            dx_in[i] = convolve(dx_out[i], rotate_kernel, full=True)
 
         self.dk = dk
         self.db = db
 
-        return dX_in
+        return dx_in
 
     def calculate_pad_dims(self):
         if self.padding == "same":

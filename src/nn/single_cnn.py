@@ -23,7 +23,7 @@ class SingleCNN(BaseNeuralNet):
         w_out = self.max_pooling.w_out
         self.fc = Linear(input_dim=h_out*w_out, output_dim=output_dim)
 
-        self.gradient_step_layers = [self.cnn, self.fc]
+        self.gradient_step_layers += [self.cnn, self.fc]
 
     def forward(self, x):
         n, h_in, w_in = x.shape
@@ -47,10 +47,3 @@ class SingleCNN(BaseNeuralNet):
         dx_out = self.max_pooling.backward(dx_out.reshape(self.n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
         dx_out = self.cnn.backward(dx_out) # (n, h_in, w_in)
         return dx_out
-
-    def step(self, lr):
-        for layer in self.gradient_step_layers:
-            params_info = layer.get_params_grad()
-            for param,info in params_info.items():
-                param_grad_step = info["current"] - lr*info["grad"]
-                setattr(layer, param, param_grad_step)

@@ -24,8 +24,8 @@ class Linear(BaseModule):
         """
         params
         ------
-        dX_out: np.ndarray(n,)
-            Upstream gradient.
+        dx_out: np.ndarray(n,)
+            Upstream gradient from loss function.
         """
         self.db = dx_out.sum()
         self.dw = np.dot(self.x.T, dx_out)

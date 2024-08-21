@@ -19,7 +19,6 @@ class MultipleLayerPerceptron(BaseNeuralNet):
             raise
 
         self.layers = []
-        self.gradient_step_layers = []
         for i in range(1, len(struct)):
             fc = Linear(struct[i-1], struct[i])
             self.layers.append(fc)
@@ -47,10 +46,3 @@ class MultipleLayerPerceptron(BaseNeuralNet):
         # backpropagation
         for layer in self.layers[::-1]:
             dx_out = layer.backward(dx_out)
-
-    def step(self, lr):
-        for layer in self.gradient_step_layers:
-            params_info = layer.get_params_grad()
-            for param,info in params_info.items():
-                param_grad_step = info["current"] - lr*info["grad"]
-                setattr(layer, param, param_grad_step)
