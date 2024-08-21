@@ -1,7 +1,6 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
-import numpy as np
 
 
 class TorchMLP(nn.Module):
@@ -13,27 +12,26 @@ class TorchMLP(nn.Module):
         x = F.relu(self.fc(x))
         return x
 
-if __name__ == '__main__':
-    n = 64
-    score = torch.randn(n,10)
-    target = torch.randint(9, size=(64,))
 
-    # print( torch.log(torch.sum(torch.exp(score))) - score[target])
+class TorchCNN(nn.Module):
+    def __init__(self, h_in, w_in, out_dim, kernel_size, pooling_size):
+        super().__init__()
+        self.pooling_size = pooling_size
+        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, stride=1, padding="same")
+        self.in_dim = (h_in // pooling_size) * (w_in // pooling_size)
+        self.fc = nn.Linear(self.in_dim, out_dim)
 
-    criterion = nn.CrossEntropyLoss()
-    print(criterion(score, target))
+    def forward(self, x):
+        x = self.conv(x)
+        x = F.max_pool2d(x, kernel_size=self.pooling_size, stride=self.pooling_size)
+        x = F.relu(x)
+        x = x.view(-1, self.in_dim)  # [batch_size, 1, h_in, w_in]
+        x = self.fc(x)
+        return x
 
-    from tools.activations import Softmax
-    from loss.classification import CrossEntropyLoss
-    from tools.utils import one_hot_vector
-    softmax = Softmax()
-    ce = CrossEntropyLoss()
-    prob = softmax.forward(np.array(score).reshape(-1, 10))
-    one_hot = one_hot_vector(10, target)
-    # one_hot[0][5] = 1
-    # print(np.log(prob[0][5]))
-    print(ce.forward(one_hot, prob))
-    loss = criterion(score, torch.from_numpy(one_hot))
-    print(loss)
-    loss.backward()
+if __name__ == "__main__":
+    conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding="same")
+    cnn = TorchCNN(4,4,3,3,2)
+    imgs = torch.randn((1, 1, 4, 4))
+    res = cnn(imgs)
     print("hi")

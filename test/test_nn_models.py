@@ -11,7 +11,7 @@ from nn.single_cnn import SingleCNN
 from nn.mlp import MultipleLayerPerceptron
 from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
-from torch_model import TorchMLP
+from torch_model import TorchMLP, TorchCNN
 from tools.utils import one_hot_vector
 
 
@@ -31,67 +31,90 @@ class TensorData(Dataset):
         return self.len
 
 
-def test_single_cnn_dummy_data():
-    imgs = np.random.normal(0, 0.5, (100, 15, 15))
+def test_single_cnn_dummy_data_same_as_torch():
+    n = 100
+    h_in, w_in = 15, 15
+    n_channel = 1
+    imgs = torch.randn((n, n_channel, h_in, w_in))
+    imgs_no_channel = torch.squeeze(imgs, 1)
     output_dim = 9
     y = np.eye(output_dim)[np.random.choice(output_dim, 100)]
     kernel_dim = (3,3)
     padding = "same"
     pooling_size = 3
-    epoch = 30
+    epoch = 1
+    lr = 0.01
 
-    cnn = SingleCNN(input_dim=imgs.shape,
+    cnn = SingleCNN(input_dim=imgs_no_channel.shape,
                     output_dim=output_dim,
                     kernel_dim=kernel_dim,
                     padding=padding,
                     pooling_size=pooling_size)
     ce_loss = CrossEntropyLoss()
 
+    # store weight
+    kernel = torch.tensor(torch.from_numpy(cnn.cnn.kernel.copy()), dtype=torch.float32).unsqueeze(0).unsqueeze(0)
+    cnn_bias = torch.tensor(torch.from_numpy(cnn.cnn.b.copy()), dtype=torch.float32)
+    weight = torch.tensor(torch.from_numpy(cnn.fc.w.T.copy()), dtype=torch.float32)
+    fc_bias = torch.tensor(torch.from_numpy(cnn.fc.b.copy()), dtype=torch.float32)
+
     for i in range(epoch):
 
-        y_pred_prob = cnn.forward(imgs)
+        y_pred_prob = cnn.forward(imgs_no_channel) # not logits, probability prediction
         y_pred = y_pred_prob.argmax(axis=1)
-        cnn.backward(y, y_pred_prob, imgs)
-        cnn.step(0.01)
-
         loss = ce_loss.forward(y, y_pred_prob)
+
+        dx_out = ce_loss.backward(y, y_pred_prob)
+        cnn.backward(dx_out)
+        cnn.step(lr)
+
         correct = (y_pred == y.argmax(axis=1)).sum()
 
         print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+    np_loss = loss
 
+    ###### torch implementation ######
+    trainsets = TensorData(imgs, y)
+    trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
+    model = TorchCNN(h_in, w_in, output_dim, kernel_dim, pooling_size)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=lr)
 
-def test_single_cnn_mnist_data():
-    from sklearn.datasets import fetch_openml
+    model.conv.weight.data = kernel
+    model.conv.bias.data = cnn_bias
+    model.fc.weight.data = weight
+    model.fc.bias.data = fc_bias
 
-    mnist = fetch_openml('mnist_784', as_frame=False)
-    n, r_c = mnist.data.shape
-    X = mnist.data.reshape(n,int(np.sqrt(r_c)),-1)
-    target = [int(i) for i in mnist.target]
-    num_label = len(np.unique(target))
-    y = np.eye(num_label)[target]
+    loss_ = []
+    n_batch = len(trainloader)
 
-    kernel_dim = (3, 3)
-    padding = "same"
-    pooling_size = 3
-    epoch = 30
+    for _ in range(epoch):
 
-    cnn = SingleCNN(input_dim=X.shape,
-                    output_dim=num_label,
-                    kernel_dim=kernel_dim,
-                    padding=padding,
-                    pooling_size=pooling_size)
-    ce_loss = CrossEntropyLoss()
+        running_loss = 0.0
 
-    for i in range(epoch):
-        y_pred_prob = cnn.forward(X)
-        y_pred = y_pred_prob.argmax(axis=1)
-        cnn.backward(y, y_pred_prob, X)
-        cnn.step(0.01)
+        for i, data in enumerate(trainloader, 0):
+            X_train, y_true = data
 
-        loss = ce_loss.forward(y, y_pred_prob)
-        correct = (y_pred == y.argmax(axis=1)).sum()
+            optimizer.zero_grad()
 
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+            y_pred = model(X_train)
+            loss = criterion(y_pred, y_true)
+            loss.backward()
+            optimizer.step()
+
+            running_loss += loss.item()
+        torch_loss = loss
+
+        loss_.append(running_loss / n_batch)
+
+    # loss check
+    np.testing.assert_array_almost_equal(torch_loss.detach().numpy(), np_loss)
+    # fc layer check
+    np.testing.assert_array_almost_equal(model.fc.bias.detach().numpy(), cnn.fc.b, decimal=3)
+    np.testing.assert_array_almost_equal(model.fc.weight.detach().numpy(), cnn.fc.w.T)
+    # conv layer check
+    np.testing.assert_array_almost_equal(model.conv.weight.squeeze((0, 1)).detach().numpy(), cnn.cnn.kernel)
+    np.testing.assert_array_almost_equal(model.conv.bias.detach().numpy(), cnn.cnn.b)
 
 
 def test_mlp_reg_same_as_torch():

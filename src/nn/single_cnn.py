@@ -6,7 +6,7 @@ from tools.activations import MaxPooling, Sigmoid, Softmax, Relu
 from loss.classification import CrossEntropyLoss
 
 
-class SingleCNN(BaseNeuralNet):
+class SingleCNN:
     def __init__(self, input_dim, output_dim: int, kernel_dim: tuple , padding: str, pooling_size: int):
         super().__init__()
         self.cnn = Convolution(
@@ -15,6 +15,7 @@ class SingleCNN(BaseNeuralNet):
             padding = padding
         )
         n, _, _ = input_dim
+        self.n = n
         self.max_pooling = MaxPooling(input_dim=(n, self.cnn.h_out, self.cnn.w_out),
                                       k=pooling_size)
         self.sigmoid = Sigmoid()
@@ -37,27 +38,20 @@ class SingleCNN(BaseNeuralNet):
         x = self.softmax.forward(x)
         return x
 
-    def backward(self, y, pred, X):
+    def backward(self, dx_out):
         """
         params
         ------
-        y: np.ndarray (n, n_label)
-            One hot encoded vector for class label
-
-        pred: np.ndarray (n, n_label)
-            Probability of each class, whose row sum is equal to 1
-
-        X: np.ndarray (n, h_in, w_in)
-            Arrary of input images
+        dx_out: np.ndarray (n, n_label)
+            Upstream gradient from loss function
         """
-        n, _ = y.shape
-        dhaty = self.softmax.backward(y) # (n, n_label)
-        dx = self.fc.backward(dhaty) # (n, h_in)
+        dx_out = self.softmax.backward(dx_out) # (n, n_label)
+        dx_out = self.fc.backward(dx_out) # (n, h_in)
         # dx = self.sigmoid.backward(dx)
-        dx = self.relu.backward(dx)
-        dx = self.max_pooling.backward(dx.reshape(n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
-        dx = self.cnn.backward(dx) # (n, h_in, w_in)
-        return dx
+        dx_out = self.relu.backward(dx_out)
+        dx_out = self.max_pooling.backward(dx_out.reshape(self.n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
+        dx_out = self.cnn.backward(dx_out) # (n, h_in, w_in)
+        return dx_out
 
     def step(self, lr):
         for layer in self.gradient_step_layers:
@@ -65,38 +59,3 @@ class SingleCNN(BaseNeuralNet):
             for param,info in params_info.items():
                 param_grad_step = info["current"] - lr*info["grad"]
                 setattr(layer, param, param_grad_step)
-
-    def zero_grad(self):
-        pass
-
-if __name__ == "__main__":
-    from sklearn.datasets import fetch_openml
-
-    mnist = fetch_openml('mnist_784', as_frame=False)
-    n, r_c = mnist.data[:1000].shape
-    X = mnist.data[:1000].reshape(n, int(np.sqrt(r_c)), -1)
-    target = [int(i) for i in mnist.target[:1000]]
-    num_label = len(np.unique(target))
-    y = np.eye(num_label)[target]
-
-    kernel_dim = (3, 3)
-    padding = "same"
-    pooling_size = 3
-    epoch = 30
-
-    cnn = SingleCNN(input_dim=X.shape,
-                    output_dim=num_label,
-                    kernel_dim=kernel_dim,
-                    padding=padding,
-                    pooling_size=pooling_size)
-
-    for i in range(epoch):
-        y_pred_prob = cnn.forward(X)
-        y_pred = y_pred_prob.argmax(axis=1)
-        cnn.backward(y, y_pred_prob, X)
-        cnn.step(0.01)
-
-        loss = cross_entropy(y, y_pred_prob)
-        correct = (y_pred == y.argmax(axis=1)).sum()
-
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 1000 * 100}%")
