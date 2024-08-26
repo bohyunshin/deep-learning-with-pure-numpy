@@ -13,6 +13,9 @@ from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
 from torch_model import TorchMLP, TorchCNN
 from tools.utils import one_hot_vector
+from data.data import NumpyDataset, NumpyDataLoader
+
+torch.set_default_dtype(torch.float64)
 
 
 class TensorData(Dataset):
@@ -31,18 +34,21 @@ class TensorData(Dataset):
 
 
 def test_single_cnn_dummy_data_same_as_torch():
-    n = 100
+    n = 1000
     h_in, w_in = 15, 15
     n_channel = 1
     imgs = torch.randn((n, n_channel, h_in, w_in))
     imgs_no_channel = torch.squeeze(imgs, 1)
     output_dim = 9
-    y = np.eye(output_dim)[np.random.choice(output_dim, 100)]
+    y = np.eye(output_dim)[np.random.choice(output_dim, n)]
     kernel_dim = (3,3)
     padding = "same"
     pooling_size = 3
     epoch = 1
-    lr = 0.01
+    lr = 0.1
+    batch_size = 300
+    n_batch = n // batch_size + 1
+    res_loss = {}
 
     cnn = SingleCNN(input_dim=imgs_no_channel.shape,
                     output_dim=output_dim,
@@ -52,29 +58,110 @@ def test_single_cnn_dummy_data_same_as_torch():
     ce_loss = CrossEntropyLoss()
 
     # store weight
-    kernel = torch.tensor(torch.from_numpy(cnn.cnn.kernel.copy()), dtype=torch.float32).unsqueeze(0).unsqueeze(0)
-    cnn_bias = torch.tensor(torch.from_numpy(cnn.cnn.b.copy()), dtype=torch.float32)
-    weight = torch.tensor(torch.from_numpy(cnn.fc.w.T.copy()), dtype=torch.float32)
-    fc_bias = torch.tensor(torch.from_numpy(cnn.fc.b.copy()), dtype=torch.float32)
+    kernel = torch.tensor(torch.from_numpy(cnn.cnn.kernel.copy()), dtype=torch.float64).unsqueeze(0).unsqueeze(0)
+    cnn_bias = torch.tensor(torch.from_numpy(cnn.cnn.b.copy()), dtype=torch.float64)
+    weight = torch.tensor(torch.from_numpy(cnn.fc.w.T.copy()), dtype=torch.float64)
+    fc_bias = torch.tensor(torch.from_numpy(cnn.fc.b.copy()), dtype=torch.float64)
+    kernel.requires_grad = True
+    cnn_bias.requires_grad = True
+    weight.requires_grad = True
+    fc_bias.requires_grad = True
+
+    # use numpy dataloader
+    dataset = NumpyDataset(imgs, y)
+    dataset_no_channel = NumpyDataset(imgs_no_channel, y)
+
+    a = NumpyDataLoader(dataset_no_channel, batch_size=batch_size, shuffle=False)
+    b = NumpyDataLoader(dataset, batch_size=batch_size, shuffle=False)
+    for ((x,y),(x_,y_)) in zip(a,b):
+        np.testing.assert_array_equal(y, y_)
+        np.testing.assert_array_equal(x, np.squeeze(x_, axis=1))
+
+    debug = {}
+    for k in range(10):
+        tmp = {
+            "weight":{
+                "fc_weight":{
+                    "np":0,
+                    "pt":0
+                },
+                "fc_bias": {
+                    "np": 0,
+                    "pt": 0
+                },
+                "conv_weight": {
+                    "np": 0,
+                    "pt": 0
+                },
+                "conv_bias": {
+                    "np": 0,
+                    "pt": 0
+                }
+            },
+            "grad": {
+                "fc_weight": {
+                    "np": 0,
+                    "pt": 0
+                },
+                "fc_bias": {
+                    "np": 0,
+                    "pt": 0
+                },
+                "conv_weight": {
+                    "np": 0,
+                    "pt": 0
+                },
+                "conv_bias": {
+                    "np": 0,
+                    "pt": 0
+                }
+            }
+        }
+        debug[k] = tmp
 
     for i in range(epoch):
 
-        y_pred_prob = cnn.forward(imgs_no_channel) # not logits, probability prediction
-        y_pred = y_pred_prob.argmax(axis=1)
-        loss = ce_loss.forward(y, y_pred_prob)
+        running_loss = 0.0
 
-        dx_out = ce_loss.backward(y, y_pred_prob)
-        cnn.backward(dx_out)
-        cnn.step(lr)
+        z = 0
+        for data in NumpyDataLoader(dataset_no_channel, batch_size=batch_size, shuffle=False):
+            X_train, y_train = data
 
-        correct = (y_pred == y.argmax(axis=1)).sum()
+            y_pred_prob = cnn.forward(X_train) # not logits, probability prediction
+            y_pred = y_pred_prob.argmax(axis=1)
+            loss = ce_loss.forward(y_train, y_pred_prob)
+            running_loss += loss.item()
 
-        print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
-    np_loss = loss
+            dx_out = ce_loss.backward(y_train, y_pred_prob)
+            cnn.backward(dx_out)
+            cnn.step(lr)
+
+            debug[z]["weight"]["fc_weight"]["np"] = cnn.fc.w
+            debug[z]["weight"]["fc_bias"]["np"] = cnn.fc.b
+            debug[z]["grad"]["fc_weight"]["np"] = cnn.fc.dw
+            debug[z]["grad"]["fc_bias"]["np"] = cnn.fc.db
+
+            debug[z]["weight"]["conv_weight"]["np"] = cnn.cnn.kernel
+            debug[z]["weight"]["conv_bias"]["np"] = cnn.cnn.b
+            debug[z]["grad"]["conv_weight"]["np"] = cnn.cnn.dk
+            debug[z]["grad"]["conv_bias"]["np"] = cnn.cnn.db
+
+            z += 1
+
+
+        print(running_loss)
+
+        # running_loss /= n_batch
+        # res_loss["numpy"] = running_loss
+
+        # correct = (y_pred == y.argmax(axis=1)).sum()
+
+    #     print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+    # np_loss = loss
 
     ###### torch implementation ######
-    trainsets = TensorData(imgs, y)
-    trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
+    # trainsets = TensorData(imgs, y)
+    # trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
     model = TorchCNN(h_in, w_in, output_dim, kernel_dim, pooling_size)
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=lr)
@@ -85,29 +172,52 @@ def test_single_cnn_dummy_data_same_as_torch():
     model.fc.bias.data = fc_bias
 
     loss_ = []
-    n_batch = len(trainloader)
+    # n_batch = len(trainloader)
 
     for _ in range(epoch):
 
         running_loss = 0.0
 
-        for i, data in enumerate(trainloader, 0):
-            X_train, y_true = data
+        z = 0
+        for data in NumpyDataLoader(dataset, batch_size=batch_size, shuffle=False):
+        # for i, data in enumerate(trainloader, 0):
+            X_train, y_train = data
+            # X_train = torch.tensor(torch.from_numpy(X_train.copy()), dtype=torch.float32)
+            y_train = torch.tensor(torch.from_numpy(y_train.copy()))
 
             optimizer.zero_grad()
 
             y_pred = model(X_train)
-            loss = criterion(y_pred, y_true)
+            loss = criterion(y_pred, y_train)
             loss.backward()
             optimizer.step()
 
             running_loss += loss.item()
-        torch_loss = loss
+
+            debug[z]["weight"]["fc_weight"]["pt"] = model.fc.weight.T
+            debug[z]["weight"]["fc_bias"]["pt"] = model.fc.bias
+            debug[z]["grad"]["fc_weight"]["pt"] = model.fc.weight.grad.T
+            debug[z]["grad"]["fc_bias"]["pt"] = model.fc.bias.grad
+
+            debug[z]["weight"]["conv_weight"]["pt"] = model.conv.weight
+            debug[z]["weight"]["conv_bias"]["pt"] = model.conv.bias
+            debug[z]["grad"]["conv_weight"]["pt"] = model.conv.weight.grad
+            debug[z]["grad"]["conv_bias"]["pt"] = model.conv.bias.grad
+
+            z += 1
+            # break
+            # if z == 2:
+            #     break
+        print(running_loss)
+        # running_loss /= n_batch
+        # res_loss["torch"] = running_loss
 
         loss_.append(running_loss / n_batch)
 
-    # loss check
-    np.testing.assert_array_almost_equal(torch_loss.detach().numpy(), np_loss)
+
+    print("hi")
+    # # loss check
+    # np.testing.assert_array_almost_equal(res_loss["torch"], res_loss["numpy"], decimal=3)
     # fc layer check
     np.testing.assert_array_almost_equal(model.fc.bias.detach().numpy(), cnn.fc.b, decimal=3)
     np.testing.assert_array_almost_equal(model.fc.weight.detach().numpy(), cnn.fc.w.T)

@@ -14,7 +14,9 @@ class NumpyDataset:
 
 
 class NumpyDataLoader:
-    def __init__(self, dataset, batch_size, shuffle=True):
+    def __init__(self, dataset, batch_size, shuffle=True, seed=1):
+        if len(dataset.X) < batch_size:
+            raise ValueError(f"Dataset needs at least {batch_size} elements")
         self.dataset = dataset
         self.batch_size = batch_size
         self.shuffle = shuffle
@@ -26,10 +28,12 @@ class NumpyDataLoader:
             if not shuffle:
                 batch_idx = total_idx[:batch_size]
             else:
+                np.random.seed(seed)
                 batch_idx = np.random.choice(total_idx, size=batch_size, replace=False)
             self.idx.append(batch_idx)
             total_idx = np.setdiff1d(total_idx, batch_idx)
-        self.idx.append(total_idx)
+        if residual != 0:
+            self.idx.append(total_idx)
 
         self.current = 0
         self.stop = len(self.idx)  # number of batches
@@ -42,6 +46,6 @@ class NumpyDataLoader:
             curr = self.current
             self.current += 1
             idx = self.idx[curr]
-            return self.dataset.X[idx], self.dataset.y[idx]
+            return self.dataset[idx]
         else:
             raise StopIteration

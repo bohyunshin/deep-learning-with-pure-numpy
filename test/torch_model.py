@@ -1,6 +1,7 @@
 import torch
 from torch import nn
 import torch.nn.functional as F
+torch.set_default_dtype(torch.float64)
 
 
 class TorchMLP(nn.Module):
