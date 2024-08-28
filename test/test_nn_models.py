@@ -46,7 +46,7 @@ def test_single_cnn_dummy_data_same_as_torch():
     pooling_size = 3
     epoch = 1
     lr = 0.1
-    batch_size = 300
+    batch_size = 32
     n_batch = n // batch_size + 1
     res_loss = {}
 
@@ -78,7 +78,7 @@ def test_single_cnn_dummy_data_same_as_torch():
         np.testing.assert_array_equal(x, np.squeeze(x_, axis=1))
 
     debug = {}
-    for k in range(10):
+    for k in range(100):
         tmp = {
             "weight":{
                 "fc_weight":{
@@ -119,45 +119,45 @@ def test_single_cnn_dummy_data_same_as_torch():
         }
         debug[k] = tmp
 
-    for i in range(epoch):
-
-        running_loss = 0.0
-
-        z = 0
-        for data in NumpyDataLoader(dataset_no_channel, batch_size=batch_size, shuffle=False):
-            X_train, y_train = data
-
-            y_pred_prob = cnn.forward(X_train) # not logits, probability prediction
-            y_pred = y_pred_prob.argmax(axis=1)
-            loss = ce_loss.forward(y_train, y_pred_prob)
-            running_loss += loss.item()
-
-            dx_out = ce_loss.backward(y_train, y_pred_prob)
-            cnn.backward(dx_out)
-            cnn.step(lr)
-
-            debug[z]["weight"]["fc_weight"]["np"] = cnn.fc.w
-            debug[z]["weight"]["fc_bias"]["np"] = cnn.fc.b
-            debug[z]["grad"]["fc_weight"]["np"] = cnn.fc.dw
-            debug[z]["grad"]["fc_bias"]["np"] = cnn.fc.db
-
-            debug[z]["weight"]["conv_weight"]["np"] = cnn.cnn.kernel
-            debug[z]["weight"]["conv_bias"]["np"] = cnn.cnn.b
-            debug[z]["grad"]["conv_weight"]["np"] = cnn.cnn.dk
-            debug[z]["grad"]["conv_bias"]["np"] = cnn.cnn.db
-
-            z += 1
-
-
-        print(running_loss)
-
-        # running_loss /= n_batch
-        # res_loss["numpy"] = running_loss
-
-        # correct = (y_pred == y.argmax(axis=1)).sum()
-
-    #     print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
-    # np_loss = loss
+    # for i in range(epoch):
+    #
+    #     running_loss = 0.0
+    #
+    #     z = 0
+    #     for data in NumpyDataLoader(dataset_no_channel, batch_size=batch_size, shuffle=False):
+    #         X_train, y_train = data
+    #
+    #         y_pred_prob = cnn.forward(X_train) # not logits, probability prediction
+    #         y_pred = y_pred_prob.argmax(axis=1)
+    #         loss = ce_loss.forward(y_train, y_pred_prob)
+    #         running_loss += loss.item()
+    #
+    #         dx_out = ce_loss.backward(y_train, y_pred_prob)
+    #         cnn.backward(dx_out)
+    #         cnn.step(lr)
+    #
+    #         debug[z]["weight"]["fc_weight"]["np"] = cnn.fc.w
+    #         debug[z]["weight"]["fc_bias"]["np"] = cnn.fc.b
+    #         debug[z]["grad"]["fc_weight"]["np"] = cnn.fc.dw
+    #         debug[z]["grad"]["fc_bias"]["np"] = cnn.fc.db
+    #
+    #         debug[z]["weight"]["conv_weight"]["np"] = cnn.cnn.kernel
+    #         debug[z]["weight"]["conv_bias"]["np"] = cnn.cnn.b
+    #         debug[z]["grad"]["conv_weight"]["np"] = cnn.cnn.dk
+    #         debug[z]["grad"]["conv_bias"]["np"] = cnn.cnn.db
+    #
+    #         z += 1
+    #
+    #
+    #     print(running_loss)
+    #
+    #     # running_loss /= n_batch
+    #     # res_loss["numpy"] = running_loss
+    #
+    #     # correct = (y_pred == y.argmax(axis=1)).sum()
+    #
+    # #     print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+    # # np_loss = loss
 
     ###### torch implementation ######
     # trainsets = TensorData(imgs, y)
@@ -166,10 +166,15 @@ def test_single_cnn_dummy_data_same_as_torch():
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=lr)
 
-    model.conv.weight.data = kernel
-    model.conv.bias.data = cnn_bias
-    model.fc.weight.data = weight
-    model.fc.bias.data = fc_bias
+    # model.conv.weight.data = kernel
+    # model.conv.bias.data = cnn_bias
+    # model.fc.weight.data = weight
+    # model.fc.bias.data = fc_bias
+
+    cnn.cnn.kernel = model.conv.weight.data.squeeze(0,1).detach().numpy().copy()
+    cnn.cnn.b = model.conv.bias.data.detach().numpy().copy()
+    cnn.fc.w = model.fc.weight.data.detach().numpy().copy().T
+    cnn.fc.b = model.fc.bias.data.detach().numpy().copy()
 
     loss_ = []
     # n_batch = len(trainloader)
@@ -213,6 +218,47 @@ def test_single_cnn_dummy_data_same_as_torch():
         # res_loss["torch"] = running_loss
 
         loss_.append(running_loss / n_batch)
+
+    # numpy implementation
+    for i in range(epoch):
+
+        running_loss = 0.0
+
+        z = 0
+        for data in NumpyDataLoader(dataset_no_channel, batch_size=batch_size, shuffle=False):
+            X_train, y_train = data
+
+            y_pred_prob = cnn.forward(X_train) # not logits, probability prediction
+            y_pred = y_pred_prob.argmax(axis=1)
+            loss = ce_loss.forward(y_train, y_pred_prob)
+            running_loss += loss.item()
+
+            dx_out = ce_loss.backward(y_train, y_pred_prob)
+            cnn.backward(dx_out)
+            cnn.step(lr)
+
+            debug[z]["weight"]["fc_weight"]["np"] = cnn.fc.w
+            debug[z]["weight"]["fc_bias"]["np"] = cnn.fc.b
+            debug[z]["grad"]["fc_weight"]["np"] = cnn.fc.dw
+            debug[z]["grad"]["fc_bias"]["np"] = cnn.fc.db
+
+            debug[z]["weight"]["conv_weight"]["np"] = cnn.cnn.kernel
+            debug[z]["weight"]["conv_bias"]["np"] = cnn.cnn.b
+            debug[z]["grad"]["conv_weight"]["np"] = cnn.cnn.dk
+            debug[z]["grad"]["conv_bias"]["np"] = cnn.cnn.db
+
+            z += 1
+
+
+        print(running_loss)
+
+        # running_loss /= n_batch
+        # res_loss["numpy"] = running_loss
+
+        # correct = (y_pred == y.argmax(axis=1)).sum()
+
+    #     print(f"epoch: {i} / loss: {loss} / accuracy: {correct / 100 * 100}%")
+    # np_loss = loss
 
 
     print("hi")
