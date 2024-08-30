@@ -3,7 +3,6 @@ import sys
 import os
 sys.path.append(os.path.join(os.getcwd(), "src"))
 from modules.convolution import Convolution
-from modules.linear import Linear
 
 
 def test_convolution():

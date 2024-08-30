@@ -27,3 +27,8 @@ If you want to contribute to this repository, please follow below rules.
 |modules|`src/modules/convolution.py`|
 |neural network|`src/nn/mlp.py`|
 |neural network|`src/nn/single_cnn.py`|
+
+## How to test
+```bash
+$ pytest
+```
