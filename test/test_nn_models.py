@@ -47,7 +47,6 @@ def test_single_cnn_dummy_data_same_as_torch():
     lr = 0.1
     batch_size = 32
     n_batch = n // batch_size + 1
-    res_loss = {}
 
     cnn = SingleCNN(input_dim=(n, h_in, w_in),
                     output_dim=output_dim,
@@ -55,80 +54,6 @@ def test_single_cnn_dummy_data_same_as_torch():
                     padding=padding,
                     pooling_size=pooling_size)
     ce_loss = CrossEntropyLoss()
-
-    # # store weight
-    # kernel = torch.tensor(torch.from_numpy(cnn.cnn.kernel.copy()), dtype=torch.float64).unsqueeze(0).unsqueeze(0)
-    # cnn_bias = torch.tensor(torch.from_numpy(cnn.cnn.b.copy()), dtype=torch.float64)
-    # weight = torch.tensor(torch.from_numpy(cnn.fc.w.T.copy()), dtype=torch.float64)
-    # fc_bias = torch.tensor(torch.from_numpy(cnn.fc.b.copy()), dtype=torch.float64)
-    # kernel.requires_grad = True
-    # cnn_bias.requires_grad = True
-    # weight.requires_grad = True
-    # fc_bias.requires_grad = True
-
-    debug = {}
-    for k in range(100):
-        tmp = {
-            "weight":{
-                "fc_weight":{
-                    "np":0,
-                    "pt":0
-                },
-                "fc_bias": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "conv_weight": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "conv_bias": {
-                    "np": 0,
-                    "pt": 0
-                }
-            },
-            "grad": {
-                "fc_weight": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "fc_bias": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "conv_weight": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "conv_bias": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "y_pred": {
-                    "np": 0,
-                    "pt": 0
-                }
-            },
-            "dx": {
-                "fc": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "relu": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "max_pool": {
-                    "np": 0,
-                    "pt": 0
-                },
-                "conv": {
-                    "np": 0,
-                    "pt": 0
-                }
-            }
-        }
-        debug[k] = tmp
 
     # use numpy dataloader
     dataset = NumpyDataset(imgs, y)
@@ -150,10 +75,8 @@ def test_single_cnn_dummy_data_same_as_torch():
         running_loss_np = 0.0
         running_loss_pt = 0.0
 
-        z = 0
         for data in dataloader:
             X_train, y_train = data
-            # X_train = torch.tensor(torch.from_numpy(X_train.copy()), dtype=torch.float32)
             y_train = torch.tensor(torch.from_numpy(y_train.copy()))
 
             # torch implementation
@@ -166,24 +89,6 @@ def test_single_cnn_dummy_data_same_as_torch():
 
             running_loss_pt += loss.item()
 
-            debug[z]["weight"]["fc_weight"]["pt"] = model.fc.weight.T
-            debug[z]["weight"]["fc_bias"]["pt"] = model.fc.bias
-            debug[z]["grad"]["fc_weight"]["pt"] = model.fc.weight.grad.T
-            debug[z]["grad"]["fc_bias"]["pt"] = model.fc.bias.grad
-
-            debug[z]["weight"]["conv_weight"]["pt"] = model.conv.weight
-            debug[z]["weight"]["conv_bias"]["pt"] = model.conv.bias
-            debug[z]["grad"]["conv_weight"]["pt"] = model.conv.weight.grad
-            debug[z]["grad"]["conv_bias"]["pt"] = model.conv.bias.grad
-
-            debug[z]["grad"]["y_pred"]["pt"] = y_pred.grad
-
-            debug[z]["dx"]["fc"]["pt"] = model.fc_x.grad
-            debug[z]["dx"]["relu"]["pt"] = model.relu_x.grad
-            debug[z]["dx"]["max_pool"]["pt"] = model.pool_x.grad
-            debug[z]["dx"]["conv"]["pt"] = model.conv_x.grad
-
-
             # numpy implementation
             X_train = X_train.squeeze(1).detach().numpy() # no channel
             y_train = y_train.detach().numpy()
@@ -195,25 +100,6 @@ def test_single_cnn_dummy_data_same_as_torch():
             cnn.backward(dx_out)
             cnn.step(lr)
 
-            debug[z]["weight"]["fc_weight"]["np"] = cnn.fc.w
-            debug[z]["weight"]["fc_bias"]["np"] = cnn.fc.b
-            debug[z]["grad"]["fc_weight"]["np"] = cnn.fc.dw
-            debug[z]["grad"]["fc_bias"]["np"] = cnn.fc.db
-
-            debug[z]["weight"]["conv_weight"]["np"] = cnn.cnn.kernel
-            debug[z]["weight"]["conv_bias"]["np"] = cnn.cnn.b
-            debug[z]["grad"]["conv_weight"]["np"] = cnn.cnn.dk
-            debug[z]["grad"]["conv_bias"]["np"] = cnn.cnn.db
-
-            debug[z]["grad"]["y_pred"]["np"] = cnn.y_pred_grad
-
-            debug[z]["dx"]["fc"]["np"] = cnn.fc_x
-            debug[z]["dx"]["relu"]["np"] = cnn.relu_x
-            debug[z]["dx"]["max_pool"]["np"] = cnn.pool_x
-            debug[z]["dx"]["conv"]["np"] = cnn.conv_x
-
-
-            z += 1
         running_loss_pt /= n_batch
         running_loss_np /= n_batch
 

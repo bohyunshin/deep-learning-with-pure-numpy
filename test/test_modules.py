@@ -26,6 +26,3 @@ def test_convolution():
     assert conv.dk.shape == kernel_dim
     # assert db.shape == ()
     assert dX_in.shape == (n, h_in+pad[0]*2, w_in+pad[1]*2)
-
-
-def test_linear_same_as_torch():
