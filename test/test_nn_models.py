@@ -195,74 +195,64 @@ def test_mlp_classification_same_as_torch():
     # data generation
     from sklearn.datasets import make_gaussian_quantiles
     X, y = make_gaussian_quantiles(cov=3.,
-                                     n_samples=n, n_features=k,
-                                     n_classes=L, random_state=1)
-    y = one_hot_vector(L, y)
+                                   n_samples=n, n_features=k,
+                                   n_classes=L, random_state=1)
     epoch = 1
+    batch_size = 32
+    n_batch = n // batch_size + (n % batch_size >= 1)
     lr = 0.01
 
-    # weight, bias generation
-    np.random.seed(1)
-    weight = np.random.uniform(-0.1, 0.1, (3, 4)) # for torch, (output_dim, input_dim)
-    bias = np.random.uniform(-0.1, 0.1, 1)
+    # use numpy dataloader
+    dataset = NumpyDataset(X, y)
+    dataloader = NumpyDataLoader(dataset, batch_size=batch_size, shuffle=False)
 
-    ###### numpy implementation ######
-
-    mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
-    ce_loss = CrossEntropyLoss()
-
-    # set weight, bias same as torch model
-    mlp.layers[0].w = weight.T # (input_dim, output_dim)
-    mlp.layers[0].b = bias
-
-    loss_ = []
-    for _ in range(epoch):
-        # forward pass
-        prob_pred = mlp.forward(X) # not logit, probability prediction
-
-        # calculate loss
-        loss = ce_loss.forward(y, prob_pred)
-        dx_out = ce_loss.backward(y, prob_pred)
-        loss_.append(loss)
-
-        # backward
-        mlp.backward(dx_out)
-
-        # gradient descent
-        mlp.step(lr)
-    np_loss = loss
-
-    ###### torch implementation ######
-    trainsets = TensorData(X, y)
-    trainloader = torch.utils.data.DataLoader(trainsets, batch_size=n)  # assuming batch gradient descent
+    # set torch model
     model = TorchMLP(struct[0], struct[1])
     criterion = nn.CrossEntropyLoss()
     optimizer = optim.SGD(model.parameters(), lr=lr)
-    model.fc.weight.data = torch.tensor(torch.from_numpy(weight), dtype=torch.float32)
-    model.fc.bias.data = torch.tensor(torch.from_numpy(bias), dtype=torch.float32)
 
-    loss_ = []
-    n_batch = len(trainloader) # batch gradient descent (not mini-batch)
+    # set numpy model
+    mlp = MultipleLayerPerceptron(struct=struct, n=n, model="classification")
+    ce_loss = CrossEntropyLoss()
+
+    # set numpy model weight as torch model weight in advance
+    mlp.layers[0].w = model.fc.weight.T.detach().numpy().copy()
+    mlp.layers[0].b = model.fc.bias.detach().numpy().copy()
 
     for _ in range(epoch):
 
-        running_loss = 0.0
+        running_loss_np = 0.0
+        running_loss_pt = 0.0
 
-        for i, data in enumerate(trainloader, 0):
-            X_train, y_true = data
+        for data in dataloader:
+            X_train, y_train = data
 
+            X_train = torch.tensor(torch.from_numpy(X_train.copy()))
+            y_train = torch.tensor(torch.from_numpy(y_train.copy())) # [2,0,4,1,2] label, which is not converted to one hot vector
+
+            # torch implementation
             optimizer.zero_grad()
-
-            y_pred = model(X_train) # this is logit, not probability prediction
-            loss = criterion(y_pred, y_true) # logit should be input for nn.CrossEntropyLoss()
-            loss.backward()
+            y_pred = model(X_train)
+            loss_pt = criterion(y_pred, y_train)
+            loss_pt.backward()
             optimizer.step()
+            running_loss_pt += loss_pt.item()
 
-            running_loss += loss.item()
+            # numpy implementation
+            X_train = X_train.detach().numpy()
+            y_train = one_hot_vector(L, y_train.detach().numpy()) # conver to one hot vector
+            y_pred = mlp.forward(X_train)
+            loss_np = ce_loss.forward(y_train, y_pred)
+            dx_out = ce_loss.backward(y_train, y_pred)
+            mlp.backward(dx_out)
+            mlp.step(lr)
+            running_loss_np += loss_np.item()
 
-        loss_.append(running_loss / n_batch)
-    torch_loss = loss.detach().numpy()
+        running_loss_pt /= n_batch
+        running_loss_np /= n_batch
 
-    np.testing.assert_array_almost_equal(np_loss, torch_loss)
-    np.testing.assert_array_almost_equal(model.fc.bias.detach().numpy(), mlp.layers[0].b)
-    np.testing.assert_array_almost_equal(model.fc.weight.detach().numpy(), mlp.layers[0].w.T)
+        # check loss at every epoch
+        np.testing.assert_almost_equal(running_loss_pt, running_loss_np)
+
+    np.testing.assert_array_almost_equal(mlp.layers[0].w, model.fc.weight.T.detach().numpy())
+    np.testing.assert_array_almost_equal(mlp.layers[0].b, model.fc.bias.detach().numpy())
