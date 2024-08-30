@@ -23,12 +23,23 @@ class TorchCNN(nn.Module):
         self.fc = nn.Linear(self.in_dim, out_dim)
 
     def forward(self, x):
-        x = self.conv(x)
-        x = F.max_pool2d(x, kernel_size=self.pooling_size, stride=self.pooling_size)
-        x = F.relu(x)
-        x = x.view(-1, self.in_dim)  # [batch_size, 1, h_in, w_in]
-        x = self.fc(x)
-        return x
+        conv_x = self.conv(x)
+        pool_x = F.max_pool2d(conv_x, kernel_size=self.pooling_size, stride=self.pooling_size)
+        relu_x = F.relu(pool_x)
+        relu_x = relu_x.view(-1, self.in_dim)  # [batch_size, 1, h_in, w_in]
+        fc_x = self.fc(relu_x)
+
+        conv_x.retain_grad()
+        pool_x.retain_grad()
+        relu_x.retain_grad()
+        fc_x.retain_grad()
+
+        self.conv_x = conv_x
+        self.pool_x = pool_x
+        self.relu_x = relu_x
+        self.fc_x = fc_x
+
+        return fc_x
 
 if __name__ == "__main__":
     conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding="same")
