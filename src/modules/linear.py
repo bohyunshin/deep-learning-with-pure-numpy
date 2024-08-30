@@ -10,6 +10,9 @@ class Linear(BaseModule):
         self.w = np.random.uniform(-0.1, 0.1, (input_dim, output_dim))
         self.b = np.random.uniform(-0.1, 0.1, output_dim)
 
+        # self.w = np.round(self.w, 4)
+        # self.b = np.round(self.b, 4)
+
         self.dw = None
         self.db = None
 
@@ -27,7 +30,8 @@ class Linear(BaseModule):
         dx_out: np.ndarray(n,)
             Upstream gradient from loss function.
         """
-        self.db = dx_out.sum()
+        # self.db = dx_out.sum()
+        self.db = dx_out.sum(axis=0)
         self.dw = np.dot(self.x.T, dx_out)
         dx_in = np.dot(dx_out, self.w.T)
         return dx_in

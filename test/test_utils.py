@@ -1,5 +1,8 @@
 import numpy as np
-from src.tools.utils import convolve
+import sys
+import os
+sys.path.append(os.path.join(os.getcwd(), "src"))
+from tools.utils import convolve
 
 
 def test_convolution():

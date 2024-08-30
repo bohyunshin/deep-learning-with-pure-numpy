@@ -12,6 +12,9 @@ class Convolution(BaseModule):
         self.kernel = np.random.uniform(-0.1,0.1,kernel_dim)
         self.b = np.random.uniform(-0.1,0.1,1)
 
+        # self.kernel = np.round(self.kernel, 4)
+        # self.b = np.round(self.b, 4)
+
         h_out, w_out = self.calculate_out_dims(h_in, w_in)
         self.h_out = h_out
         self.w_out = w_out

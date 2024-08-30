@@ -50,7 +50,7 @@ class MaxPooling:
         h_out, w_out = h_in // k + (h_in % k >= 1), w_in // k + (w_in % k >= 1)
         self.h_out = h_out
         self.w_out = w_out
-        self._cache = []
+
 
     def forward(self, x):
         """
@@ -59,6 +59,7 @@ class MaxPooling:
         x: np.ndarray (n, h, w)
             An array of images with 3d dimension
         """
+        self._cache = []
         k = self.k
         n, h_in, w_in = x.shape
         h_out, w_out = self.h_out, self.w_out

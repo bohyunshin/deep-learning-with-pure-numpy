@@ -41,9 +41,15 @@ class SingleCNN(BaseNeuralNet):
         dx_out: np.ndarray (n, n_label)
             Upstream gradient from loss function
         """
+        n, _ = dx_out.shape
         dx_out = self.softmax.backward(dx_out) # (n, n_label)
+        self.y_pred_grad = dx_out
+        self.fc_x = dx_out
         dx_out = self.fc.backward(dx_out) # (n, h_in)
+        self.relu_x = dx_out
         dx_out = self.relu.backward(dx_out)
-        dx_out = self.max_pooling.backward(dx_out.reshape(self.n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
+        self.pool_x = dx_out
+        dx_out = self.max_pooling.backward(dx_out.reshape(n, self.max_pooling.h_out, -1)) # (n, h_in, w_in)
+        self.conv_x = dx_out
         dx_out = self.cnn.backward(dx_out) # (n, h_in, w_in)
         return dx_out
