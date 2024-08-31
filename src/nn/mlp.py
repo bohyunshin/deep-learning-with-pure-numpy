@@ -10,14 +10,6 @@ class MultipleLayerPerceptron(BaseNeuralNet):
         super().__init__()
         self.struct = struct
         self.n = n
-
-        if model == "regression":
-            self.loss = MeanSquaredError()
-        elif model == "classification":
-            self.loss = CrossEntropyLoss()
-        else:
-            raise
-
         self.layers = []
         for i in range(1, len(struct)):
             fc = Linear(struct[i-1], struct[i])
