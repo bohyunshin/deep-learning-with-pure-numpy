@@ -1,8 +1,6 @@
+from modules.linear import Linear
 from nn.base import BaseNeuralNet
 from tools.activations import Relu, Softmax
-from modules.linear import Linear
-from loss.classification import CrossEntropyLoss
-from loss.regression import MeanSquaredError
 
 
 class MultipleLayerPerceptron(BaseNeuralNet):
@@ -12,7 +10,7 @@ class MultipleLayerPerceptron(BaseNeuralNet):
         self.n = n
         self.layers = []
         for i in range(1, len(struct)):
-            fc = Linear(struct[i-1], struct[i])
+            fc = Linear(struct[i - 1], struct[i])
             self.layers.append(fc)
             self.gradient_step_layers.append(fc)
             self.layers.append(Relu())

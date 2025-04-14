@@ -1,9 +1,10 @@
-import numpy as np
 import matplotlib.pyplot as plt
+import numpy as np
 import seaborn as sns
 
-from nn.mlp import MultipleLayerPerceptronRegression
 from loss.regression import mean_squared_error
+from nn.mlp import MultipleLayerPerceptronRegression
+
 
 def train(epoch):
     n = 1000
@@ -12,12 +13,11 @@ def train(epoch):
     struct = [4, 1]
     np.random.seed(1)
     X = np.random.randn(n, k)
-    y = np.cos(X).sum(axis=1).reshape(n,1)
+    y = np.cos(X).sum(axis=1).reshape(n, 1)
 
     nn = MultipleLayerPerceptronRegression(struct=struct, n=n)
     loss_ = []
     for _ in range(epoch):
-
         # forward pass
         pred = nn.forward(X)
 
@@ -39,6 +39,7 @@ def train(epoch):
     plt.ylabel("loss")
     plt.xlabel("iteration")
     plt.show()
+
 
 if __name__ == "__main__":
     train(5000)

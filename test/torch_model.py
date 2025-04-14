@@ -1,6 +1,6 @@
 import torch
-from torch import nn
 import torch.nn.functional as F
+from torch import nn
 
 
 class TorchMLP(nn.Module):
@@ -17,7 +17,13 @@ class TorchCNN(nn.Module):
     def __init__(self, h_in, w_in, out_dim, kernel_size, pooling_size):
         super().__init__()
         self.pooling_size = pooling_size
-        self.conv = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=kernel_size, stride=1, padding="same")
+        self.conv = nn.Conv2d(
+            in_channels=1,
+            out_channels=1,
+            kernel_size=kernel_size,
+            stride=1,
+            padding="same",
+        )
         self.in_dim = (h_in // pooling_size) * (w_in // pooling_size)
         self.fc = nn.Linear(self.in_dim, out_dim)
 
@@ -29,9 +35,12 @@ class TorchCNN(nn.Module):
         x = self.fc(x)
         return x
 
+
 if __name__ == "__main__":
-    conv1 = nn.Conv2d(in_channels=1, out_channels=1, kernel_size=3, stride=1, padding="same")
-    cnn = TorchCNN(4,4,3,3,2)
+    conv1 = nn.Conv2d(
+        in_channels=1, out_channels=1, kernel_size=3, stride=1, padding="same"
+    )
+    cnn = TorchCNN(4, 4, 3, 3, 2)
     imgs = torch.randn((1, 1, 4, 4))
     res = cnn(imgs)
     print("hi")

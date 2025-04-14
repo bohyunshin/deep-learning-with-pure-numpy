@@ -1,24 +1,18 @@
-import sys
 import os
+import sys
+
 sys.path.append(os.path.join(os.getcwd(), "src"))
 import numpy as np
+
 from tools.activations import MaxPooling, Relu, Softmax
 
 
 def test_relu():
-    imgs = np.array([
-        [-1,1,-1],
-        [1,-1,1],
-        [-1,1,-1]
-    ]).reshape((1,3,3))
+    imgs = np.array([[-1, 1, -1], [1, -1, 1], [-1, 1, -1]]).reshape((1, 3, 3))
 
     relu = Relu()
     out = relu.forward(imgs)
-    out_expected = np.array([
-                [0,1,0],
-                [1,0,1],
-                [0,1,0]
-    ]).reshape((1,3,3))
+    out_expected = np.array([[0, 1, 0], [1, 0, 1], [0, 1, 0]]).reshape((1, 3, 3))
 
     # forward test
     np.testing.assert_array_equal(out_expected, out)
@@ -34,15 +28,16 @@ def test_relu():
     in_grad_expected[0][2][1] = in_grad[0][2][1]
     np.testing.assert_array_equal(in_grad_expected, in_grad)
 
+
 def test_max_pooling_equal_size():
     n = 1
     k = 2
 
-    imgs = np.arange(16).reshape(n,4,4)
+    imgs = np.arange(16).reshape(n, 4, 4)
 
-    max_pooling = MaxPooling(input_dim=(n,4,4),k=k)
+    max_pooling = MaxPooling(input_dim=(n, 4, 4), k=k)
     out = max_pooling.forward(imgs)
-    out_expected = np.array([[5,7],[13,15]]).reshape(n,2,2)
+    out_expected = np.array([[5, 7], [13, 15]]).reshape(n, 2, 2)
 
     # forward test
     np.testing.assert_array_equal(out_expected, out)
@@ -58,15 +53,16 @@ def test_max_pooling_equal_size():
     in_grad_expected[0][3][3] = out_grad[0][1][1]
     np.testing.assert_array_equal(in_grad_expected, in_grad)
 
+
 def test_max_pooling_unequal_size():
     n = 1
     k = 3
 
-    imgs = np.arange(16).reshape(n,4,4)
+    imgs = np.arange(16).reshape(n, 4, 4)
 
-    max_pooling = MaxPooling(input_dim=(n,4,4),k=k)
+    max_pooling = MaxPooling(input_dim=(n, 4, 4), k=k)
     out = max_pooling.forward(imgs)
-    out_expected = np.array([[10,11],[14,15]]).reshape(n,2,2)
+    out_expected = np.array([[10, 11], [14, 15]]).reshape(n, 2, 2)
 
     # forward test
     np.testing.assert_array_equal(out_expected, out)
@@ -98,13 +94,11 @@ def test_softmax():
     # backward
     dx_in = softmax.backward(dx_out)
 
-    I = np.identity(L)
+    identity_mat = np.identity(L)
     for i in range(n):
         yhat = out[i]
-        mat = np.array([
-            yhat, yhat, yhat
-        ])
-        right = I - mat
+        mat = np.array([yhat, yhat, yhat])
+        right = identity_mat - mat
         left = mat.T
         jacobian = left * right
         grad = np.dot(dx_out[i], jacobian)
