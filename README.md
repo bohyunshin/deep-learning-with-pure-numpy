@@ -48,14 +48,6 @@ After setting up python version, just run following command which will install a
 $ poetry install
 ```
 
-## Setting up git hook
-
-Set up automatic linting using the following commands:
-```shell
-# This command will ensure linting runs automatically every time you commit code.
-pre-commit install
-```
-
 ### Note
 
 If you want to add package to `pyproject.toml`, please use following command.
@@ -68,6 +60,14 @@ Then, update `poetry.lock` to ensure that repository members share same environm
 
 ```shell
 $ poetry lock
+```
+
+## Setting up git hook
+
+Set up automatic linting using the following commands:
+```shell
+# This command will ensure linting runs automatically every time you commit code.
+pre-commit install
 ```
 
 ## Why made this repository?
