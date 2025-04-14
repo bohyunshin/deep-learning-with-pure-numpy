@@ -1,4 +1,5 @@
 import numpy as np
+
 from modules.base import BaseModule
 
 
@@ -21,7 +22,7 @@ class Linear(BaseModule):
         assert x.shape[1] == self.input_dim
         self.x = x
         x = np.dot(x, self.w) + self.b
-        return x # shape: (num_of_data, output_dim)
+        return x  # shape: (num_of_data, output_dim)
 
     def backward(self, dx_out, **kwargs):
         """
@@ -38,13 +39,7 @@ class Linear(BaseModule):
 
     def get_params_grad(self):
         params_info = {
-            "w": {
-                "current": self.w,
-                "grad": self.dw
-            },
-            "b": {
-                "current": self.b,
-                "grad": self.db
-            }
+            "w": {"current": self.w, "grad": self.dw},
+            "b": {"current": self.b, "grad": self.db},
         }
         return params_info

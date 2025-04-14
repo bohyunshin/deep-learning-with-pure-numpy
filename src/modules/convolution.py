@@ -1,16 +1,17 @@
 import numpy as np
+
 from modules.base import BaseModule
 from tools.utils import convolve
 
 
 class Convolution(BaseModule):
-    def __init__(self, input_dim, kernel_dim: tuple , padding: str):
+    def __init__(self, input_dim, kernel_dim: tuple, padding: str):
         super().__init__()
         n, h_in, w_in = input_dim
         self.padding = padding
 
-        self.kernel = np.random.uniform(-0.1,0.1,kernel_dim)
-        self.b = np.random.uniform(-0.1,0.1,1)
+        self.kernel = np.random.uniform(-0.1, 0.1, kernel_dim)
+        self.b = np.random.uniform(-0.1, 0.1, 1)
 
         # self.kernel = np.round(self.kernel, 4)
         # self.b = np.round(self.b, 4)
@@ -32,7 +33,7 @@ class Convolution(BaseModule):
         n, h_in, w_in = imgs.shape
         pad = self.calculate_pad_dims()
         out = np.zeros((n, self.h_out, self.w_out))
-        imgs = np.pad(imgs, pad_width=((0,0),(pad[0], pad[0]), (pad[1], pad[1])))
+        imgs = np.pad(imgs, pad_width=((0, 0), (pad[0], pad[0]), (pad[1], pad[1])))
         self.X = imgs
         for i, img in enumerate(imgs):
             out[i] = convolve(img, self.kernel, self.b)
@@ -83,19 +84,13 @@ class Convolution(BaseModule):
         if self.padding == "same":
             return h_in, w_in
         elif self.padding == "valid":
-            return h_in-k+1, w_in-k+1
+            return h_in - k + 1, w_in - k + 1
         else:
             raise
 
     def get_params_grad(self):
         params_info = {
-            "kernel": {
-                "current": self.kernel,
-                "grad": self.dk
-            },
-            "b": {
-                "current": self.b,
-                "grad": self.db
-            }
+            "kernel": {"current": self.kernel, "grad": self.dk},
+            "b": {"current": self.b, "grad": self.db},
         }
         return params_info

@@ -1,4 +1,5 @@
 import numpy as np
+
 from loss.base import BaseLoss
 
 
@@ -13,4 +14,3 @@ class MeanSquaredError(BaseLoss):
     def backward(self, y, pred):
         n, _ = y.shape
         return (pred - y) / n * 2
-

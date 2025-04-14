@@ -4,6 +4,72 @@ This repository contains python code using numpy only (not pytorch) to implement
 
 Any PRs are warmly welcomed!
 
+## Setting up environment
+
+We use [poetry](https://github.com/python-poetry/poetry) to manage dependencies of repository.
+
+Use poetry with version `2.1.1`.
+
+```shell
+$ poetry --version
+Poetry (version 2.1.1)
+```
+
+Python version should be `3.11.x`.
+
+```shell
+$ python --version
+Python 3.11.11
+```
+
+If python version is lower than `3.11`, try installing required version using `pyenv`.
+
+Create virtual environment.
+
+```shell
+$ poetry env activate
+```
+
+If your global python version is not 3.11, run following command.
+
+```shell
+$ poetry env use python3.11
+```
+
+You can check virtual environment path info and its executable python path using following command.
+
+```shell
+$ poetry env info
+```
+
+After setting up python version, just run following command which will install all the required packages from `poetry.lock`.
+
+```shell
+$ poetry install
+```
+
+### Note
+
+If you want to add package to `pyproject.toml`, please use following command.
+
+```shell
+$ poetry add "package==1.0.0"
+```
+
+Then, update `poetry.lock` to ensure that repository members share same environment setting.
+
+```shell
+$ poetry lock
+```
+
+## Setting up git hook
+
+Set up automatic linting using the following commands:
+```shell
+# This command will ensure linting runs automatically every time you commit code.
+pre-commit install
+```
+
 ## Why made this repository?
 - To start learning how to train neural network quickly, machine learning frameworks such as pytorch or tensor flow are best options to do this.
 - However, it is difficult to understand what is happening inside the neural networks (forward / backward propagation, etc..)

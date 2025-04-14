@@ -1,4 +1,5 @@
 import numpy as np
+
 from loss.base import BaseLoss
 from tools.activations import Softmax
 
@@ -20,7 +21,9 @@ class CrossEntropyLoss(BaseLoss):
         """
         n, _ = y_true.shape
         self.n = n
-        return -(y_true * np.log(y_prob_pred)).sum() / self.n  # total sum of (n, n_label) ndarray
+        return (
+            -(y_true * np.log(y_prob_pred)).sum() / self.n
+        )  # total sum of (n, n_label) ndarray
 
     def backward(self, y_true, y_prob_pred):
         """
@@ -33,7 +36,7 @@ class CrossEntropyLoss(BaseLoss):
         -------
         grad: np.ndarray (n, n_label)
         """
-        return -y_true/(y_prob_pred*self.n)
+        return -y_true / (y_prob_pred * self.n)
 
 
 class CrossEntropyLogitLoss:
@@ -55,7 +58,9 @@ class CrossEntropyLogitLoss:
         self.n = n
         y_prob_pred = self.softmax.forward(logit)
         self.y_prob_pred = y_prob_pred
-        return -(y_true * np.log(y_prob_pred)).sum() / self.n  # total sum of (n, n_label) ndarray
+        return (
+            -(y_true * np.log(y_prob_pred)).sum() / self.n
+        )  # total sum of (n, n_label) ndarray
 
     def backward(self, y_true, logit):
         """

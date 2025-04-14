@@ -1,32 +1,33 @@
+import os
+import sys
+
 import numpy as np
 import torch
 from torch import nn, optim
-from torch.utils.data import DataLoader, Dataset
-import sys
-import os
+from torch.utils.data import Dataset
+
 sys.path.append(os.path.join(os.getcwd(), "src"))
 sys.path.append(os.path.join(os.getcwd(), "test"))
 
-from nn.single_cnn import SingleCNN
-from nn.mlp import MultipleLayerPerceptron
+from torch_model import TorchCNN, TorchMLP
+
+from data.data import NumpyDataLoader, NumpyDataset
 from loss.classification import CrossEntropyLoss
 from loss.regression import MeanSquaredError
-from torch_model import TorchMLP, TorchCNN
+from nn.mlp import MultipleLayerPerceptron
+from nn.single_cnn import SingleCNN
 from tools.utils import one_hot_vector
-from data.data import NumpyDataset, NumpyDataLoader
 
 torch.set_default_dtype(torch.float64)
 
 
 class TensorData(Dataset):
-
     def __init__(self, x_data, y_data):
         self.x_data = torch.FloatTensor(x_data)
         self.y_data = torch.FloatTensor(y_data)
         self.len = self.y_data.shape[0]
 
     def __getitem__(self, index):
-
         return self.x_data[index], self.y_data[index]
 
     def __len__(self):
@@ -40,7 +41,7 @@ def test_single_cnn_dummy_data_same_as_torch():
     imgs = torch.randn((n, n_channel, h_in, w_in))
     output_dim = 9
     y = np.eye(output_dim)[np.random.choice(output_dim, n)]
-    kernel_dim = (3,3)
+    kernel_dim = (3, 3)
     padding = "same"
     pooling_size = 3
     epoch = 1
@@ -53,11 +54,13 @@ def test_single_cnn_dummy_data_same_as_torch():
     dataloader = NumpyDataLoader(dataset, batch_size=batch_size, shuffle=False)
 
     # set numpy model
-    cnn = SingleCNN(input_dim=(n, h_in, w_in),
-                    output_dim=output_dim,
-                    kernel_dim=kernel_dim,
-                    padding=padding,
-                    pooling_size=pooling_size)
+    cnn = SingleCNN(
+        input_dim=(n, h_in, w_in),
+        output_dim=output_dim,
+        kernel_dim=kernel_dim,
+        padding=padding,
+        pooling_size=pooling_size,
+    )
     ce_loss = CrossEntropyLoss()
 
     # set torch model
@@ -66,13 +69,12 @@ def test_single_cnn_dummy_data_same_as_torch():
     optimizer = optim.SGD(model.parameters(), lr=lr)
 
     # set numpy model weight as torch model weight in advance
-    cnn.cnn.kernel = model.conv.weight.data.squeeze(0,1).detach().numpy().copy()
+    cnn.cnn.kernel = model.conv.weight.data.squeeze(0, 1).detach().numpy().copy()
     cnn.cnn.b = model.conv.bias.data.detach().numpy().copy()
     cnn.fc.w = model.fc.weight.data.detach().numpy().copy().T
     cnn.fc.b = model.fc.bias.data.detach().numpy().copy()
 
     for _ in range(epoch):
-
         running_loss_np = 0.0
         running_loss_pt = 0.0
 
@@ -91,7 +93,7 @@ def test_single_cnn_dummy_data_same_as_torch():
             running_loss_pt += loss.item()
 
             # numpy implementation
-            X_train = X_train.squeeze(1).detach().numpy() # no channel
+            X_train = X_train.squeeze(1).detach().numpy()  # no channel
             y_train = y_train.detach().numpy()
             y_pred_prob = cnn.forward(X_train)  # not logits, probability prediction
             loss = ce_loss.forward(y_train, y_pred_prob)
@@ -107,12 +109,13 @@ def test_single_cnn_dummy_data_same_as_torch():
         # check loss at every epoch
         np.testing.assert_almost_equal(running_loss_pt, running_loss_np)
 
-
     # fc layer check
     np.testing.assert_array_almost_equal(model.fc.bias.detach().numpy(), cnn.fc.b)
     np.testing.assert_array_almost_equal(model.fc.weight.detach().numpy(), cnn.fc.w.T)
     # conv layer check
-    np.testing.assert_array_almost_equal(model.conv.weight.squeeze((0, 1)).detach().numpy(), cnn.cnn.kernel)
+    np.testing.assert_array_almost_equal(
+        model.conv.weight.squeeze((0, 1)).detach().numpy(), cnn.cnn.kernel
+    )
     np.testing.assert_array_almost_equal(model.conv.bias.detach().numpy(), cnn.cnn.b)
 
 
@@ -148,7 +151,6 @@ def test_mlp_reg_same_as_torch():
     mlp.layers[0].b = model.fc.bias.detach().numpy().copy()
 
     for _ in range(epoch):
-
         running_loss_np = 0.0
         running_loss_pt = 0.0
 
@@ -182,8 +184,12 @@ def test_mlp_reg_same_as_torch():
         # check loss at every epoch
         np.testing.assert_almost_equal(running_loss_pt, running_loss_np)
 
-    np.testing.assert_array_almost_equal(mlp.layers[0].w, model.fc.weight.T.detach().numpy())
-    np.testing.assert_array_almost_equal(mlp.layers[0].b, model.fc.bias.detach().numpy())
+    np.testing.assert_array_almost_equal(
+        mlp.layers[0].w, model.fc.weight.T.detach().numpy()
+    )
+    np.testing.assert_array_almost_equal(
+        mlp.layers[0].b, model.fc.bias.detach().numpy()
+    )
 
 
 def test_mlp_classification_same_as_torch():
@@ -194,9 +200,10 @@ def test_mlp_classification_same_as_torch():
 
     # data generation
     from sklearn.datasets import make_gaussian_quantiles
-    X, y = make_gaussian_quantiles(cov=3.,
-                                   n_samples=n, n_features=k,
-                                   n_classes=L, random_state=1)
+
+    X, y = make_gaussian_quantiles(
+        cov=3.0, n_samples=n, n_features=k, n_classes=L, random_state=1
+    )
     epoch = 1
     batch_size = 32
     n_batch = n // batch_size + (n % batch_size >= 1)
@@ -220,7 +227,6 @@ def test_mlp_classification_same_as_torch():
     mlp.layers[0].b = model.fc.bias.detach().numpy().copy()
 
     for _ in range(epoch):
-
         running_loss_np = 0.0
         running_loss_pt = 0.0
 
@@ -228,7 +234,9 @@ def test_mlp_classification_same_as_torch():
             X_train, y_train = data
 
             X_train = torch.tensor(torch.from_numpy(X_train.copy()))
-            y_train = torch.tensor(torch.from_numpy(y_train.copy())) # [2,0,4,1,2] label, which is not converted to one hot vector
+            y_train = torch.tensor(
+                torch.from_numpy(y_train.copy())
+            )  # [2,0,4,1,2] label, which is not converted to one hot vector
 
             # torch implementation
             optimizer.zero_grad()
@@ -240,7 +248,9 @@ def test_mlp_classification_same_as_torch():
 
             # numpy implementation
             X_train = X_train.detach().numpy()
-            y_train = one_hot_vector(L, y_train.detach().numpy()) # conver to one hot vector
+            y_train = one_hot_vector(
+                L, y_train.detach().numpy()
+            )  # convert to one hot vector
             y_pred = mlp.forward(X_train)
             loss_np = ce_loss.forward(y_train, y_pred)
             dx_out = ce_loss.backward(y_train, y_pred)
@@ -254,5 +264,9 @@ def test_mlp_classification_same_as_torch():
         # check loss at every epoch
         np.testing.assert_almost_equal(running_loss_pt, running_loss_np)
 
-    np.testing.assert_array_almost_equal(mlp.layers[0].w, model.fc.weight.T.detach().numpy())
-    np.testing.assert_array_almost_equal(mlp.layers[0].b, model.fc.bias.detach().numpy())
+    np.testing.assert_array_almost_equal(
+        mlp.layers[0].w, model.fc.weight.T.detach().numpy()
+    )
+    np.testing.assert_array_almost_equal(
+        mlp.layers[0].b, model.fc.bias.detach().numpy()
+    )
