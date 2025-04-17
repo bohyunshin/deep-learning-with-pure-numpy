@@ -1,4 +1,5 @@
 import numpy as np
+from numpy.typing import NDArray
 
 from loss.base import BaseLoss
 from tools.activations import Softmax
@@ -8,52 +9,22 @@ class CrossEntropyLoss(BaseLoss):
     def __init__(self):
         super().__init__()
 
-    def forward(self, y_true, y_prob_pred):
-        """
-        params
-        ------
-        y_true: np.ndarray (n, n_label)
-        y_prob_pred: np.ndarray (n, n_label)
-
-        returns
-        -------
-        forward value: np.ndarray (n,)
-        """
+    def forward(self, y_true: NDArray, y_prob_pred: NDArray) -> NDArray:
         n, _ = y_true.shape
         self.n = n
         return (
             -(y_true * np.log(y_prob_pred)).sum() / self.n
         )  # total sum of (n, n_label) ndarray
 
-    def backward(self, y_true, y_prob_pred):
-        """
-        params
-        ------
-        y_true: np.ndarray (n, n_label)
-        y_prob_pred: np.ndarray (n, n_label)
-
-        returns
-        -------
-        grad: np.ndarray (n, n_label)
-        """
+    def backward(self, y_true: NDArray, y_prob_pred: NDArray) -> NDArray:
         return -y_true / (y_prob_pred * self.n)
 
 
-class CrossEntropyLogitLoss:
+class CrossEntropyLogitLoss(BaseLoss):
     def __init__(self):
         self.softmax = Softmax()
 
-    def forward(self, y_true, logit):
-        """
-        params
-        ------
-        y_true: np.ndarray (n, n_label)
-        logit: np.ndarray (n, n_label)
-
-        returns
-        -------
-        forward value: np.ndarray (n,)
-        """
+    def forward(self, y_true: NDArray, logit: NDArray) -> NDArray:
         n, _ = y_true.shape
         self.n = n
         y_prob_pred = self.softmax.forward(logit)
@@ -62,15 +33,5 @@ class CrossEntropyLogitLoss:
             -(y_true * np.log(y_prob_pred)).sum() / self.n
         )  # total sum of (n, n_label) ndarray
 
-    def backward(self, y_true, logit):
-        """
-        params
-        ------
-        y_true: np.ndarray (n, n_label)
-        logit: np.ndarray (n, n_label)
-
-        returns
-        -------
-        grad: np.ndarray (n, n_label)
-        """
+    def backward(self, y_true: NDArray, logit: NDArray) -> NDArray:
         return (self.y_prob_pred - y_true) / self.n

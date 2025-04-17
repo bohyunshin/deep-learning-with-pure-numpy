@@ -1,20 +1,23 @@
+from typing import Self, Tuple
+
 import numpy as np
+from numpy.typing import NDArray
 
 
 class NumpyDataset:
-    def __init__(self, X, y):
+    def __init__(self, X: NDArray, y: NDArray):
         self.X = X
         self.y = y
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.X)
 
-    def __getitem__(self, idx):
+    def __getitem__(self, idx) -> Tuple[NDArray, NDArray]:
         return self.X[idx], self.y[idx]
 
 
 class NumpyDataLoader:
-    def __init__(self, dataset, batch_size, shuffle=True, seed=1):
+    def __init__(self, dataset: NumpyDataset, batch_size: int, shuffle=True, seed=1):
         if len(dataset.X) < batch_size:
             raise ValueError(f"Dataset needs at least {batch_size} elements")
         self.dataset = dataset
@@ -38,10 +41,10 @@ class NumpyDataLoader:
         self.current = 0
         self.stop = len(self.idx)  # number of batches
 
-    def __iter__(self):
+    def __iter__(self) -> Self:
         return self
 
-    def __next__(self):
+    def __next__(self) -> Tuple[NDArray, NDArray]:
         if self.current < self.stop:
             curr = self.current
             self.current += 1

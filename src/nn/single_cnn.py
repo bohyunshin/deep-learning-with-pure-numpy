@@ -1,3 +1,7 @@
+from typing import Tuple
+
+from numpy.typing import NDArray
+
 from modules.convolution import Convolution
 from modules.linear import Linear
 from nn.base import BaseNeuralNet
@@ -7,7 +11,7 @@ from tools.activations import MaxPooling, Relu, Softmax
 class SingleCNN(BaseNeuralNet):
     def __init__(
         self,
-        input_dim,
+        input_dim: Tuple[int, int],
         output_dim: int,
         kernel_dim: tuple,
         padding: str,
@@ -31,7 +35,7 @@ class SingleCNN(BaseNeuralNet):
 
         self.gradient_step_layers += [self.cnn, self.fc]
 
-    def forward(self, x):
+    def forward(self, x: NDArray) -> NDArray:
         n, h_in, w_in = x.shape
         x = self.cnn.forward(x)  # (n, h_out, w_out)
         x = self.max_pooling.forward(x)  # (n, h_out // k, w_out // k)
@@ -40,13 +44,7 @@ class SingleCNN(BaseNeuralNet):
         x = self.softmax.forward(x)
         return x
 
-    def backward(self, dx_out):
-        """
-        params
-        ------
-        dx_out: np.ndarray (n, n_label)
-            Upstream gradient from loss function
-        """
+    def backward(self, dx_out: NDArray) -> NDArray:
         n, _ = dx_out.shape
         dx_out = self.softmax.backward(dx_out)  # (n, n_label)
         dx_out = self.fc.backward(dx_out)  # (n, h_in)

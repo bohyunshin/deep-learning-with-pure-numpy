@@ -6,7 +6,7 @@ from loss.regression import mean_squared_error
 from nn.mlp import MultipleLayerPerceptronRegression
 
 
-def train(epoch):
+def train(epoch: int):
     n = 1000
     k = 4
     struct = [4, 3, 2, 1]
