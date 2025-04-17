@@ -1,20 +1,20 @@
+from typing import Dict, Tuple
+
 import numpy as np
+from numpy.typing import NDArray
 
 from modules.base import BaseModule
 from tools.utils import convolve
 
 
 class Convolution(BaseModule):
-    def __init__(self, input_dim, kernel_dim: tuple, padding: str):
+    def __init__(self, input_dim: Tuple[int, int], kernel_dim: tuple, padding: str):
         super().__init__()
         n, h_in, w_in = input_dim
         self.padding = padding
 
         self.kernel = np.random.uniform(-0.1, 0.1, kernel_dim)
         self.b = np.random.uniform(-0.1, 0.1, 1)
-
-        # self.kernel = np.round(self.kernel, 4)
-        # self.b = np.round(self.b, 4)
 
         h_out, w_out = self.calculate_out_dims(h_in, w_in)
         self.h_out = h_out
@@ -23,7 +23,7 @@ class Convolution(BaseModule):
         self.dk = None
         self.db = None
 
-    def forward(self, imgs):
+    def forward(self, imgs: NDArray) -> NDArray:
         """
         params
         ------
@@ -39,7 +39,7 @@ class Convolution(BaseModule):
             out[i] = convolve(img, self.kernel, self.b)
         return out
 
-    def backward(self, dx_out):
+    def backward(self, dx_out: NDArray) -> NDArray:
         """
         params
         ------
@@ -70,7 +70,7 @@ class Convolution(BaseModule):
 
         return dx_in
 
-    def calculate_pad_dims(self):
+    def calculate_pad_dims(self) -> Tuple[int, int]:
         if self.padding == "same":
             h_f, w_f = self.kernel.shape
             return (h_f - 1) // 2, (w_f - 1) // 2
@@ -79,7 +79,7 @@ class Convolution(BaseModule):
         else:
             raise
 
-    def calculate_out_dims(self, h_in, w_in):
+    def calculate_out_dims(self, h_in: int, w_in: int) -> Tuple[int, int]:
         k, _ = self.kernel.shape
         if self.padding == "same":
             return h_in, w_in
@@ -88,7 +88,7 @@ class Convolution(BaseModule):
         else:
             raise
 
-    def get_params_grad(self):
+    def get_params_grad(self) -> Dict[str, Dict]:
         params_info = {
             "kernel": {"current": self.kernel, "grad": self.dk},
             "b": {"current": self.b, "grad": self.db},

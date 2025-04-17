@@ -1,15 +1,18 @@
+from typing import Tuple
+
 import numpy as np
+from numpy.typing import NDArray
 
 
 class Relu:
     def __init__(self):
         pass
 
-    def forward(self, x):
+    def forward(self, x: NDArray) -> NDArray:
         self.arg_pos = x > 0
         return x * self.arg_pos
 
-    def backward(self, dx_out):
+    def backward(self, dx_out: NDArray) -> NDArray:
         arg_pos = self.arg_pos.reshape(dx_out.shape)
         return dx_out * arg_pos
 
@@ -18,33 +21,18 @@ class Sigmoid:
     def __init__(self):
         pass
 
-    def forward(self, x):
-        """
-        params
-        ------
-        x: np.ndarray (n,)
-
-        returns
-        -------
-        out: np.ndarray (n,)
-        """
+    def forward(self, x: NDArray) -> NDArray:
         self.x = x
         self.frw = 1 / (1 + np.exp(-x))
         return self.frw
 
-    def backward(self, dx_out):
-        """
-        returns
-        -------
-        out: np.ndarray (n,)
-            Derivative of sigmoid function.
-        """
+    def backward(self, dx_out: NDArray) -> NDArray:
         frw = self.frw.reshape(dx_out.shape)
         return frw * (1 - frw) * dx_out
 
 
 class MaxPooling:
-    def __init__(self, input_dim: tuple, k: int):
+    def __init__(self, input_dim: Tuple[int, int], k: int):
         self.input_dim = input_dim
         self.k = k
         n, h_in, w_in = input_dim
@@ -52,7 +40,7 @@ class MaxPooling:
         self.h_out = h_out
         self.w_out = w_out
 
-    def forward(self, x):
+    def forward(self, x: NDArray) -> NDArray:
         """
         params
         ------
@@ -78,7 +66,7 @@ class MaxPooling:
 
         return out
 
-    def backward(self, dX_out):
+    def backward(self, dX_out: NDArray) -> NDArray:
         n, h_out, w_out = dX_out.shape
         _, h_in, w_in = self.input_dim
         dX_in = np.zeros((n, h_in, w_in))
@@ -93,23 +81,14 @@ class Softmax:
     def __init__(self):
         pass
 
-    def forward(self, x):
-        """
-        params
-        ------
-        x: np.ndarray (n, n_label)
-
-        returns
-        -------
-        y_pred: np.ndarray (n, n_label)
-        """
+    def forward(self, x: NDArray) -> NDArray:
         self.logit = x
         x = np.exp(x - x.max(axis=1).reshape(-1, 1))
         y_pred = x / x.sum(axis=1).reshape(-1, 1)
         self.y_pred = y_pred
         return y_pred
 
-    def backward(self, dx_out):
+    def backward(self, dx_out: NDArray) -> NDArray:
         """
         Step 1
         Calculate jacobian matrix (L, L)

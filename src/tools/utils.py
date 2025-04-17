@@ -1,7 +1,8 @@
 import numpy as np
+from numpy.typing import NDArray
 
 
-def convolve(img, kernel, bias=0, stride=1, full=False):
+def convolve(img: NDArray, kernel: NDArray, bias=0, stride=1, full=False) -> NDArray:
     """
     params
     ------
@@ -28,7 +29,7 @@ def convolve(img, kernel, bias=0, stride=1, full=False):
     return out
 
 
-def one_hot_vector(n_label, y_true):
+def one_hot_vector(n_label: int, y_true: NDArray) -> NDArray:
     """
     params
     ------
