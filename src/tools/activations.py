@@ -82,7 +82,6 @@ class Softmax:
         pass
 
     def forward(self, x: NDArray) -> NDArray:
-        self.logit = x
         x = np.exp(x - x.max(axis=1).reshape(-1, 1))
         y_pred = x / x.sum(axis=1).reshape(-1, 1)
         self.y_pred = y_pred
