@@ -3,7 +3,7 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 from modules.convolution import Convolution
 
 

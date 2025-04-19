@@ -24,6 +24,8 @@ class Convolution(BaseModule):
             raise ValueError(
                 f"Padding must be one of same or valid, got {padding} instead"
             )
+        if stride >= 2:
+            raise ValueError("Currently, only stride=1 is supported")
         n, self.h_in, self.w_in = input_dim
         self.padding = padding
         self.stride = stride
