@@ -1,4 +1,3 @@
-import torch
 import torch.nn.functional as F
 from torch import nn
 
@@ -34,12 +33,3 @@ class TorchCNN(nn.Module):
         x = x.view(-1, self.in_dim)  # [batch_size, 1, h_in, w_in]
         x = self.fc(x)
         return x
-
-
-if __name__ == "__main__":
-    conv1 = nn.Conv2d(
-        in_channels=1, out_channels=1, kernel_size=3, stride=1, padding="same"
-    )
-    cnn = TorchCNN(4, 4, 3, 3, 2)
-    imgs = torch.randn((1, 1, 4, 4))
-    res = cnn(imgs)
