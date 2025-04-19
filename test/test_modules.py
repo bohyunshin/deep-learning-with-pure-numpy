@@ -12,11 +12,12 @@ def test_convolution():
     h_in, w_in = (15, 15)
     kernel_dim = (3, 3)
     padding = "same"
+    stride = 1
 
     conv = Convolution(
-        input_dim=(n, h_in, w_in), kernel_dim=kernel_dim, padding=padding
+        input_dim=(n, h_in, w_in), kernel_dim=kernel_dim, padding=padding, stride=stride
     )
-    pad = conv.calculate_pad_dims()
+    (h_pad_left, h_pad_right), (w_pad_left, w_pad_right) = conv.calculate_pad_dims()
     imgs = np.random.normal(0, 0.5, (n, h_in, w_in))
 
     out = conv.forward(imgs)
@@ -24,6 +25,11 @@ def test_convolution():
 
     out_grad = np.random.normal(0, 0.5, out.shape)
     dX_in = conv.backward(out_grad)
+
+    # check gradient dimension
     assert conv.dk.shape == kernel_dim
-    # assert db.shape == ()
-    assert dX_in.shape == (n, h_in + pad[0] * 2, w_in + pad[1] * 2)
+    assert dX_in.shape == (
+        n,
+        h_in + h_pad_left + h_pad_right,
+        w_in + w_pad_left + w_pad_right,
+    )

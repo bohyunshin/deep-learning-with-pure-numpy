@@ -34,24 +34,15 @@ class SingleCNN(BaseNeuralNet):
         w_out = self.max_pooling.w_out
         self.fc = Linear(input_dim=h_out * w_out, output_dim=output_dim)
 
+        self.layers = [self.cnn, self.max_pooling, self.relu, self.fc, self.softmax]
         self.gradient_step_layers += [self.cnn, self.fc]
 
     def forward(self, x: NDArray) -> NDArray:
-        n, h_in, w_in = x.shape
-        x = self.cnn.forward(x)  # (n, h_out, w_out)
-        x = self.max_pooling.forward(x)  # (n, h_out // k, w_out // k)
-        x = self.relu.forward(x)
-        x = self.fc.forward(x.reshape(n, -1))  # (n, h_out*w_out) -> (n, out_dim)
-        x = self.softmax.forward(x)
+        for layer in self.layers:
+            x = layer.forward(x)
         return x
 
     def backward(self, dx_out: NDArray) -> NDArray:
-        n, _ = dx_out.shape
-        dx_out = self.softmax.backward(dx_out)  # (n, n_label)
-        dx_out = self.fc.backward(dx_out)  # (n, h_in)
-        dx_out = self.relu.backward(dx_out)
-        dx_out = self.max_pooling.backward(
-            dx_out.reshape(n, self.max_pooling.h_out, -1)
-        )  # (n, h_in, w_in)
-        dx_out = self.cnn.backward(dx_out)  # (n, h_in, w_in)
+        for layer in self.layers[::-1]:
+            dx_out = layer.backward(dx_out)
         return dx_out
