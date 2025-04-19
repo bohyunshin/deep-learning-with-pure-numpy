@@ -3,22 +3,55 @@ from typing import Dict, Tuple
 import numpy as np
 from numpy.typing import NDArray
 
-from modules.base import BaseModule
-from tools.utils import convolve
+from src.modules.base import BaseModule
+from src.tools.cnn import calculate_output_dim, calculate_padding_1d, convolve
 
 
 class Convolution(BaseModule):
-    def __init__(self, input_dim: Tuple[int, int], kernel_dim: tuple, padding: str):
+    def __init__(
+        self,
+        input_dim: Tuple[int, int],
+        kernel_dim: Tuple[int, int],
+        padding: str,
+        stride: int,
+    ):
         super().__init__()
-        n, h_in, w_in = input_dim
+        """
+        Convolution layer with 2 dimensional image.
+        """
+
+        if padding not in ["same", "valid"]:
+            raise ValueError(
+                f"Padding must be one of same or valid, got {padding} instead"
+            )
+        if stride >= 2:
+            raise ValueError("Currently, only stride=1 is supported")
+        n, self.h_in, self.w_in = input_dim
         self.padding = padding
+        self.stride = stride
+        k, _ = kernel_dim
 
         self.kernel = np.random.uniform(-0.1, 0.1, kernel_dim)
         self.b = np.random.uniform(-0.1, 0.1, 1)
 
-        h_out, w_out = self.calculate_out_dims(h_in, w_in)
-        self.h_out = h_out
-        self.w_out = w_out
+        (h_pad_left, h_pad_right), (w_pad_left, w_pad_right) = self.calculate_pad_dims()
+        self.h_pad_left = h_pad_left
+        self.h_pad_right = h_pad_right
+        self.w_pad_left = w_pad_left
+        self.w_pad_right = w_pad_right
+
+        self.h_out = calculate_output_dim(
+            input_size=self.h_in,
+            pad_size=self.h_pad_left + self.h_pad_right,
+            kernel_size=k,
+            stride=self.stride,
+        )
+        self.w_out = calculate_output_dim(
+            input_size=self.w_in,
+            pad_size=self.w_pad_left + self.w_pad_right,
+            kernel_size=k,
+            stride=self.stride,
+        )
 
         self.dk = None
         self.db = None
@@ -31,12 +64,26 @@ class Convolution(BaseModule):
             dimension (n, h_in, w_in). 3d array input.
         """
         n, h_in, w_in = imgs.shape
-        pad = self.calculate_pad_dims()
+        k, _ = self.kernel.shape
+
         out = np.zeros((n, self.h_out, self.w_out))
-        imgs = np.pad(imgs, pad_width=((0, 0), (pad[0], pad[0]), (pad[1], pad[1])))
-        self.X = imgs
-        for i, img in enumerate(imgs):
-            out[i] = convolve(img, self.kernel, self.b)
+        padded_imgs = np.pad(
+            imgs,
+            pad_width=(
+                (0, 0),
+                (self.h_pad_left, self.h_pad_right),
+                (self.w_pad_left, self.w_pad_right),
+            ),
+        )
+        self.X = padded_imgs
+        for i, padded_img in enumerate(padded_imgs):
+            out[i] = convolve(
+                img=padded_img,
+                out_dim=(self.h_out, self.w_out),
+                kernel=self.kernel,
+                stride=self.stride,
+                bias=self.b,
+            )
         return out
 
     def backward(self, dx_out: NDArray) -> NDArray:
@@ -59,34 +106,49 @@ class Convolution(BaseModule):
         db = dx_out.sum()
 
         for img, dX_out_i in zip(self.X, dx_out):
-            dk += convolve(img, dX_out_i)
+            dk += convolve(
+                img=img,
+                out_dim=self.kernel.shape,
+                kernel=dX_out_i,
+                stride=self.stride,
+            )
 
         rotate_kernel = np.rot90(self.kernel, k=2)
         for i in range(n):
-            dx_in[i] = convolve(dx_out[i], rotate_kernel, full=True)
+            dx_in[i] = convolve(
+                img=dx_out[i],
+                out_dim=self.X.shape[1:],
+                kernel=rotate_kernel,
+                stride=1,
+                full=True,
+            )
 
         self.dk = dk
         self.db = db
 
         return dx_in
 
-    def calculate_pad_dims(self) -> Tuple[int, int]:
+    def calculate_pad_dims(self) -> Tuple[Tuple[int, int], Tuple[int, int]]:
         if self.padding == "same":
             h_f, w_f = self.kernel.shape
-            return (h_f - 1) // 2, (w_f - 1) // 2
-        elif self.padding == "valid":
-            return 0, 0
-        else:
-            raise
 
-    def calculate_out_dims(self, h_in: int, w_in: int) -> Tuple[int, int]:
-        k, _ = self.kernel.shape
-        if self.padding == "same":
-            return h_in, w_in
+            h_pad_left, h_pad_right = calculate_padding_1d(
+                padding_type=self.padding,
+                input_size=self.h_in,
+                kernel_size=h_f,
+                stride=self.stride,
+            )
+            w_pad_left, w_pad_right = calculate_padding_1d(
+                padding_type=self.padding,
+                input_size=self.w_in,
+                kernel_size=w_f,
+                stride=self.stride,
+            )
+            return (h_pad_left, h_pad_right), (w_pad_left, w_pad_right)
         elif self.padding == "valid":
-            return h_in - k + 1, w_in - k + 1
+            return (0, 0), (0, 0)
         else:
-            raise
+            raise ValueError(f"Not supported padding type: {self.padding}")
 
     def get_params_grad(self) -> Dict[str, Dict]:
         params_info = {

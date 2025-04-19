@@ -3,8 +3,8 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
-from tools.utils import convolve
+sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
+from tools.cnn import convolve
 
 
 def test_convolution():
@@ -13,8 +13,12 @@ def test_convolution():
 
     # no padding
     expected = np.array([[5, 8], [14, 17]])
-    np.testing.assert_array_equal(expected, convolve(img, filter))
+    np.testing.assert_array_equal(
+        expected, convolve(img=img, out_dim=expected.shape, kernel=filter)
+    )
 
     # full convolution
     expected = np.array([[0, 0, 1, 2], [0, 5, 8, 5], [6, 14, 17, 8], [12, 14, 16, 0]])
-    np.testing.assert_array_equal(expected, convolve(img, filter, full=True))
+    np.testing.assert_array_equal(
+        expected, convolve(img=img, out_dim=expected.shape, kernel=filter, full=True)
+    )

@@ -67,6 +67,11 @@ class MaxPooling:
         return out
 
     def backward(self, dX_out: NDArray) -> NDArray:
+        # when upstream gradient from linear layer is passed
+        if len(dX_out.shape) == 2:
+            n, _ = dX_out.shape
+            dX_out = dX_out.reshape(n, self.h_out, -1)
+
         n, h_out, w_out = dX_out.shape
         _, h_in, w_in = self.input_dim
         dX_in = np.zeros((n, h_in, w_in))
@@ -82,7 +87,6 @@ class Softmax:
         pass
 
     def forward(self, x: NDArray) -> NDArray:
-        self.logit = x
         x = np.exp(x - x.max(axis=1).reshape(-1, 1))
         y_pred = x / x.sum(axis=1).reshape(-1, 1)
         self.y_pred = y_pred

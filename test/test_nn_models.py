@@ -6,7 +6,7 @@ import torch
 from torch import nn, optim
 from torch.utils.data import Dataset
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
 sys.path.append(os.path.join(os.getcwd(), "test"))
 
 from torch_model import TorchCNN, TorchMLP
@@ -37,6 +37,7 @@ class TensorData(Dataset):
 def test_single_cnn_dummy_data_same_as_torch():
     n = 1000
     h_in, w_in = 15, 15
+    stride = 1
     n_channel = 1
     imgs = torch.randn((n, n_channel, h_in, w_in))
     output_dim = 9
@@ -58,6 +59,7 @@ def test_single_cnn_dummy_data_same_as_torch():
         input_dim=(n, h_in, w_in),
         output_dim=output_dim,
         kernel_dim=kernel_dim,
+        stride=stride,
         padding=padding,
         pooling_size=pooling_size,
     )

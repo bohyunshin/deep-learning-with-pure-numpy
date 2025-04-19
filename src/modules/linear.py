@@ -18,14 +18,19 @@ class Linear(BaseModule):
         self.db = None
 
     def forward(self, x: NDArray) -> NDArray:
-        # shape of x: (num_of_data, input_dim)
-        assert x.shape[1] == self.input_dim
+        # when previous layer is convolution layer
+        if len(x.shape) >= 3:
+            n, _, _ = x.shape
+            x = x.reshape(n, -1)
+        elif len(x.shape) == 2:
+            assert x.shape[1] == self.input_dim
+        else:
+            raise ValueError("Unsupported 1 dimensional input")
         self.x = x
         x = np.dot(x, self.w) + self.b
         return x  # shape: (num_of_data, output_dim)
 
     def backward(self, dx_out: NDArray, **kwargs) -> NDArray:
-        # self.db = dx_out.sum()
         self.db = dx_out.sum(axis=0)
         self.dw = np.dot(self.x.T, dx_out)
         dx_in = np.dot(dx_out, self.w.T)
