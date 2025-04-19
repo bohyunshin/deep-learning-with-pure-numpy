@@ -27,13 +27,29 @@ class Convolution(BaseModule):
         n, self.h_in, self.w_in = input_dim
         self.padding = padding
         self.stride = stride
+        k, _ = kernel_dim
 
         self.kernel = np.random.uniform(-0.1, 0.1, kernel_dim)
         self.b = np.random.uniform(-0.1, 0.1, 1)
 
-        # h_out, w_out = self.calculate_out_dims()
-        # self.h_out = h_out
-        # self.w_out = w_out
+        (h_pad_left, h_pad_right), (w_pad_left, w_pad_right) = self.calculate_pad_dims()
+        self.h_pad_left = h_pad_left
+        self.h_pad_right = h_pad_right
+        self.w_pad_left = w_pad_left
+        self.w_pad_right = w_pad_right
+
+        self.h_out = calculate_output_dim(
+            input_size=self.h_in,
+            pad_size=self.h_pad_left + self.h_pad_right,
+            kernel_size=k,
+            stride=self.stride,
+        )
+        self.w_out = calculate_output_dim(
+            input_size=self.w_in,
+            pad_size=self.w_pad_left + self.w_pad_right,
+            kernel_size=k,
+            stride=self.stride,
+        )
 
         self.dk = None
         self.db = None
@@ -46,30 +62,26 @@ class Convolution(BaseModule):
             dimension (n, h_in, w_in). 3d array input.
         """
         n, h_in, w_in = imgs.shape
-        k, _ = self.kernel
-        (h_pad_left, h_pad_right), (w_pad_left, w_pad_right) = self.calculate_pad_dims()
+        k, _ = self.kernel.shape
 
-        h_out = calculate_output_dim(
-            input_size=h_in,
-            pad_size=h_pad_left + h_pad_right,
-            kernel_size=k,
-            srtide=self.stride,
-        )
-        w_out = calculate_output_dim(
-            input_size=w_in,
-            pad_size=w_pad_left + w_pad_right,
-            kernel_size=k,
-            srtide=self.stride,
-        )
-
-        out = np.zeros((n, h_out, w_out))
+        out = np.zeros((n, self.h_out, self.w_out))
         padded_imgs = np.pad(
             imgs,
-            pad_width=((0, 0), (h_pad_left, h_pad_right), (w_pad_left, w_pad_right)),
+            pad_width=(
+                (0, 0),
+                (self.h_pad_left, self.h_pad_right),
+                (self.w_pad_left, self.w_pad_right),
+            ),
         )
         self.X = padded_imgs
         for i, padded_img in enumerate(padded_imgs):
-            out[i] = convolve(padded_img, self.kernel, self.b)
+            out[i] = convolve(
+                img=padded_img,
+                out_dim=(self.h_out, self.w_out),
+                kernel=self.kernel,
+                stride=self.stride,
+                bias=self.b,
+            )
         return out
 
     def backward(self, dx_out: NDArray) -> NDArray:
@@ -92,11 +104,22 @@ class Convolution(BaseModule):
         db = dx_out.sum()
 
         for img, dX_out_i in zip(self.X, dx_out):
-            dk += convolve(img, dX_out_i)
+            dk += convolve(
+                img=img,
+                out_dim=self.kernel.shape,
+                kernel=dX_out_i,
+                stride=self.stride,
+            )
 
         rotate_kernel = np.rot90(self.kernel, k=2)
         for i in range(n):
-            dx_in[i] = convolve(dx_out[i], rotate_kernel, full=True)
+            dx_in[i] = convolve(
+                img=dx_out[i],
+                out_dim=self.X.shape[1:],
+                kernel=rotate_kernel,
+                stride=1,
+                full=True,
+            )
 
         self.dk = dk
         self.db = db
@@ -125,34 +148,9 @@ class Convolution(BaseModule):
         else:
             raise ValueError(f"Not supported padding type: {self.padding}")
 
-    # def calculate_out_dims(self, h_pad_total: int, w_pad_total: int) -> Tuple[int, int]:
-    #     k, _ = self.kernel.shape
-    #     if self.padding == "same":
-    #         h_out = calculate_output_dim(
-    #             input_size=self.h_in,
-    #             pad_size=h_pad_total,
-    #             kernel_size=k,
-    #             srtide=self.stride,
-    #         )
-    #         w_out =
-    #         return h_out, w_out
-    #     elif self.padding == "valid":
-    #         return h_in - k + 1, w_in - k + 1
-    #     else:
-    #         raise
-
     def get_params_grad(self) -> Dict[str, Dict]:
         params_info = {
             "kernel": {"current": self.kernel, "grad": self.dk},
             "b": {"current": self.b, "grad": self.db},
         }
         return params_info
-
-
-if __name__ == "__main__":
-    imgs = np.random.uniform(size=(10, 6, 6))
-    k = 3
-    stride = 1
-    padding = "same"
-    conv = Convolution((10, 6, 6), 3, padding, stride)
-    conv.forward(imgs)

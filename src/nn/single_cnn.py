@@ -14,12 +14,13 @@ class SingleCNN(BaseNeuralNet):
         input_dim: Tuple[int, int],
         output_dim: int,
         kernel_dim: tuple,
+        stride: int,
         padding: str,
         pooling_size: int,
     ):
         super().__init__()
         self.cnn = Convolution(
-            input_dim=input_dim, kernel_dim=kernel_dim, padding=padding
+            input_dim=input_dim, kernel_dim=kernel_dim, padding=padding, stride=stride
         )
         n, _, _ = input_dim
         self.n = n

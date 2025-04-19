@@ -43,4 +43,3 @@ if __name__ == "__main__":
     cnn = TorchCNN(4, 4, 3, 3, 2)
     imgs = torch.randn((1, 1, 4, 4))
     res = cnn(imgs)
-    print("hi")

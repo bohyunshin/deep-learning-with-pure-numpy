@@ -3,8 +3,8 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.join(os.getcwd(), "src"))
-from tools.utils import convolve
+sys.path.append(os.path.join(os.path.dirname(__file__), "../src"))
+from tools.cnn import convolve
 
 
 def test_convolution():
