@@ -94,6 +94,10 @@ If you want to contribute to this repository, please follow below rules.
 |neural network|`src/nn/mlp.py`|
 |neural network|`src/nn/single_cnn.py`|
 
+## Examples
+
+You can construct multi-layer perceptron or convolution neural network. The examples are in `examples/` directory.
+
 ## How to test
 ```bash
 $ pytest
